@@ -51,6 +51,10 @@
       <div id="af"></div>
       <div id="b"></div>
       <div id="c"></div>
+      <div id="d"></div>
+      <div id="e"></div>
+      <div id="h"></div>
+      <div id="l"></div>
       <div id="bc"></div>
       <div id="sp"></div>
       <div id="pc"></div>
@@ -80,7 +84,7 @@
       const fbSize = width * height * 4;
       const heapU8 = new Uint8ClampedArray(memory.buffer, fbPtr, fbSize);
       const RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 0xffff);
-      const CPU = new Uint8ClampedArray(memory.buffer, registersPtr, 8);
+      const CPU = new Uint8ClampedArray(memory.buffer, registersPtr, 12);
 
       console.log(RAM);
       console.log(CPU);
@@ -113,8 +117,12 @@
         registers[1].textContent = `f: ${CPU[0]}`;
         registers[2].textContent = `b: ${CPU[3]}`;
         registers[3].textContent = `c: ${CPU[2]}`;
-        registers[4].textContent = `sp: ${(CPU[5] << 8) | CPU[4]}`;
-        registers[5].textContent = `pc: ${(CPU[7] << 8) | CPU[6]}`;
+        registers[4].textContent = `d: ${CPU[5]}`;
+        registers[5].textContent = `e: ${CPU[4]}`;
+        registers[6].textContent = `h: ${CPU[7]}`;
+        registers[7].textContent = `l: ${CPU[6]}`;
+        registers[8].textContent = `sp: ${(CPU[8] << 8) | CPU[9]}`;
+        registers[9].textContent = `pc: ${(CPU[10] << 8) | CPU[11]}`;
 
         requestAnimationFrame(render);
 

@@ -44,6 +44,9 @@ uint32_t framebuffer[WIDTH * HEIGHT];
 uint8_t Memory[0xFFFF];
 Registers Regs = {0};
 
+uint8_t nextByte() { return Memory[Regs.pc++]; }
+uint16_t nextWord() { return nextByte() | (nextByte() << 8); }
+
 // a simple animation counter
 static unsigned frame = 0;
 
@@ -69,7 +72,12 @@ uint8_t *loadDest[2][4] = {
     {&Regs.c, &Regs.e, &Regs.l, &Regs.a},
 };
 
-void LOAD(int byte0) {
+uint16_t *loadDest16[2][4] = {
+    {&Regs.bc, &Regs.de, &Regs.hl, &Regs.sp},
+    {&Regs.bc, &Regs.de, &Regs.hl, &Regs.af},
+};
+
+void LD08(int byte0) {
   // decode instruction
   Instruction inst;
 
@@ -90,19 +98,40 @@ void LOAD(int byte0) {
   *dest = *source;
 }
 
+void LD16(int byte0) {
+  // decode instruction
+  Instruction inst;
+
+  uint16_t n16 = nextWord();
+
+  inst.op = byte0;
+
+  inst.mode = (byte0 & 0b11000000) >> 6;
+  inst.destSelect = (byte0 & 0b00110000) >> 4;
+  inst.destNibble = (byte0 & 0b00001000) >> 3;
+  inst.sourceSelect = (byte0 & 0b00000111);
+
+  // @TODO handle the case where the dest is [hl]
+  uint16_t *dest = loadDest16[inst.mode == 0b00 ? 0 : 1][inst.destSelect];
+
+  // execute the instruction
+
+  *dest = n16;
+}
+
 void HALT(int byte0) { return; }
 
 // clang-format off
 void (*opTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
-/* 0x */ {NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP},
-/* 1x */ {NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP},
-/* 2x */ {NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP},
-/* 3x */ {NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP, NOOP, NOOP, LOAD, NOOP},
-/* 4x */ {LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD},
-/* 5x */ {LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD},
-/* 6x */ {LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD},
-/* 7x */ {LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, HALT, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD, LOAD},
+/* 0x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
+/* 1x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
+/* 2x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
+/* 3x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
+/* 4x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
+/* 5x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
+/* 6x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
+/* 7x */ {LD08, LD08, LD08, LD08, LD08, LD08, HALT, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
 /* 8x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* 9x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Ax */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
@@ -144,6 +173,13 @@ __attribute__((export_name("get_height"))) int get_height(void) {
 
 #define ROM0_START 0
 
+#define VRAM_TILE_DATA 0x9000
+#define BLACK_TILE 0x0400 // somewhere after the program
+
+// set up program data
+#define LOW_BYTE(word) (word & 0x00FF)
+#define HIGH_BYTE(word) ((word & 0xFF00) >> 8)
+
 // compute the next frame in-place
 __attribute__((export_name("boot"))) void boot(void) {
   Regs.af = 0xFFFF;
@@ -152,9 +188,6 @@ __attribute__((export_name("boot"))) void boot(void) {
   Regs.hl = 0xFFFF;
   Regs.sp = 0xFFFB;
   Regs.pc = 0x0000;
-
-#define VRAM_TILE_DATA 0x9000
-#define BLACK_TILE 0x0400 // somewhere after the program
 
   /*
   program:
@@ -175,6 +208,20 @@ __attribute__((export_name("boot"))) void boot(void) {
     64 bytes all 1
   */
 
+  uint16_t pc = 0;
+
+  // ld hl, VRAM_TILE_DATA + 16
+  Memory[pc++] = 0b00100001;
+  Memory[pc++] = LOW_BYTE(VRAM_TILE_DATA + 16);
+  Memory[pc++] = HIGH_BYTE(VRAM_TILE_DATA + 16);
+
+  // ld de, BLACK_TILE
+  Memory[pc++] = 0b00010001;
+  Memory[pc++] = LOW_BYTE(BLACK_TILE);
+  Memory[pc++] = HIGH_BYTE(BLACK_TILE);
+
+  // ld b, 16
+
   for (int i = 0; i < 64; i++) {
     // set up the tile data
     Memory[BLACK_TILE + i] = 1;
@@ -185,9 +232,7 @@ __attribute__((export_name("boot"))) void boot(void) {
 __attribute__((export_name("next_frame"))) void next_frame(void) {
   static int cycleCount = 0;
 
-  Regs.a = 7;
-
-  int byte = 0b01000111; // ld b, a
+  int byte = nextByte();
 
   int lo = (byte & 0b00001111);
   int hi = (byte & 0b11110000) >> 4;
