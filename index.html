@@ -61,7 +61,11 @@
     </div>
     <canvas id="canvas"></canvas>
     <script type="module">
-      const wasm = await WebAssembly.instantiateStreaming(fetch("main.wasm"));
+      const wasm = await WebAssembly.instantiateStreaming(fetch("main.wasm"), {
+        env: {
+          print: (arg) => console.log("WASM says:", arg),
+        }
+      });
       const {
         memory,
         get_width,
@@ -88,6 +92,7 @@
 
       console.log(RAM);
       console.log(CPU);
+      console.log(RAM[0x0400])
 
       const canvas = document.getElementById("canvas");
       canvas.width = width;

@@ -4,6 +4,9 @@
 #define WIDTH 400
 #define HEIGHT 144
 
+__attribute__((import_module("env"), import_name("print"))) extern void
+print(int x);
+
 typedef struct Registers {
   union {
     struct {
@@ -77,25 +80,97 @@ uint16_t *loadDest16[2][4] = {
     {&Regs.bc, &Regs.de, &Regs.hl, &Regs.af},
 };
 
+// the group 1 8 bit load instructions
+// such as LD A, [HL] and LD A, N8
+void LDG1(int byte0) {
+  Instruction inst;
+
+  if (byte0 & 0b00000100) {
+    // ld x, n8
+    inst.destSelect = (byte0 & 0b00110000) >> 4;
+
+    uint8_t n8 = nextByte();
+    // @TODO handle the case where the dest is [hl]
+    uint8_t *dest = loadDest[inst.destNibble][inst.destSelect];
+
+    *dest = n8;
+  } else {
+    if (byte0 & 0b00001000) {
+      // ld a, [x]
+      switch ((byte0 & 0b00110000) >> 4) {
+      case 0:
+        Regs.a = Memory[Regs.bc];
+        break;
+      case 1:
+        Regs.a = Memory[Regs.de];
+        break;
+      case 2:
+        Regs.a = Memory[Regs.hl++];
+        break;
+      case 3:
+        Regs.a = Memory[Regs.hl--];
+        break;
+
+      default:
+        break;
+      }
+
+    } else {
+      // ld [x], a
+      switch ((byte0 & 0b00110000) >> 4) {
+      case 0:
+        Memory[Regs.bc] = Regs.a;
+        break;
+      case 1:
+        Memory[Regs.de] = Regs.a;
+        break;
+      case 2:
+        Memory[Regs.hl++] = Regs.a;
+        break;
+      case 3:
+        Memory[Regs.hl--] = Regs.a;
+        break;
+
+      default:
+        break;
+      }
+    }
+  }
+}
+
 void LD08(int byte0) {
   // decode instruction
   Instruction inst;
 
   inst.op = byte0;
 
+  inst.mode = (byte0 & 0b11000000) >> 6;
   inst.destSelect = (byte0 & 0b00110000) >> 4;
   inst.destNibble = (byte0 & 0b00001000) >> 3;
   inst.sourceSelect = (byte0 & 0b00000111);
 
-  // @TODO handle the case where the source is [hl]
-  uint8_t *source = loadSource[inst.sourceSelect];
+  if (inst.mode == 0) {
+    // @TODO handle the LD [X], A family and the LD A, [X] family
 
-  // @TODO handle the case where the dest is [hl]
-  uint8_t *dest = loadDest[inst.destNibble][inst.destSelect];
+    // ld X, n8 from the first 4 op rows
+    uint8_t n8 = nextByte();
 
-  // execute the instruction
+    // @TODO handle the case where the dest is [hl]
+    uint8_t *dest = loadDest[inst.destNibble][inst.destSelect];
 
-  *dest = *source;
+    *dest = n8;
+  } else {
+    // ld X, Y from the 2nd 4 op rows
+    // @TODO handle the case where the source is [hl]
+    uint8_t *source = loadSource[inst.sourceSelect];
+
+    // @TODO handle the case where the dest is [hl]
+    uint8_t *dest = loadDest[inst.destNibble][inst.destSelect];
+
+    // execute the instruction
+
+    *dest = *source;
+  }
 }
 
 void LD16(int byte0) {
@@ -124,10 +199,10 @@ void HALT(int byte0) { return; }
 // clang-format off
 void (*opTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
-/* 0x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
-/* 1x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
-/* 2x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
-/* 3x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
+/* 0x */ {NOOP, LD16, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP},
+/* 1x */ {NOOP, LD16, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP},
+/* 2x */ {NOOP, LD16, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP},
+/* 3x */ {NOOP, LD16, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP, NOOP, NOOP, LDG1, NOOP},
 /* 4x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
 /* 5x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
 /* 6x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
@@ -221,6 +296,16 @@ __attribute__((export_name("boot"))) void boot(void) {
   Memory[pc++] = HIGH_BYTE(BLACK_TILE);
 
   // ld b, 16
+  Memory[pc++] = 0b00000110;
+  Memory[pc++] = 16;
+
+  uint8_t l0 = pc; // .loop
+
+  // ld a, [de]
+  Memory[pc++] = 0b00011010;
+
+  // ld [hl+], a
+  Memory[pc++] = 0b00100010;
 
   for (int i = 0; i < 64; i++) {
     // set up the tile data
