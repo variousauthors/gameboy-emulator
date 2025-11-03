@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pure C WASM Pixel Blit</title>
+    <style>
+      body {
+        background: #000;
+        margin: 0;
+        display: flex;
+        height: 100vh;
+        align-items: center;
+        justify-content: center;
+      }
+      canvas {
+        image-rendering: pixelated;
+        border: 1px solid #333;
+      }
+
+      #registers {
+        color: white;
+      }
+
+      #memory {
+        display: grid;
+        grid-template-columns: repeat(16, 1fr);
+        gap: 1px;
+        height: 100px;
+        overflow-y: scroll;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      #memory div {
+        width: 20px; /* optional, can use auto or fixed */
+        height: 20px; /* square cells look nice */
+        background: #eee;
+        text-align: center;
+        line-height: 20px;
+        font-size: 10px;
+        border: 1px solid #ccc; /* optional for visibility */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="memory"></div>
+    <div id="registers">
+      <div id="a"></div>
+      <div id="f"></div>
+      <div id="af"></div>
+      <div id="b"></div>
+      <div id="c"></div>
+      <div id="bc"></div>
+      <div id="sp"></div>
+      <div id="pc"></div>
+    </div>
+    <canvas id="canvas"></canvas>
+    <script type="module">
+      const wasm = await WebAssembly.instantiateStreaming(fetch("main.wasm"));
+      const {
+        memory,
+        get_width,
+        get_memory,
+        get_registers,
+        get_height,
+        get_framebuffer,
+        next_frame,
+        boot,
+      } = wasm.instance.exports;
+
+      boot();
+
+      const memoryPtr = get_memory();
+      const registersPtr = get_registers();
+
+      const width = get_width();
+      const height = get_height();
+      const fbPtr = get_framebuffer();
+      const fbSize = width * height * 4;
+      const heapU8 = new Uint8ClampedArray(memory.buffer, fbPtr, fbSize);
+      const RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 0xffff);
+      const CPU = new Uint8ClampedArray(memory.buffer, registersPtr, 8);
+
+      console.log(RAM);
+      console.log(CPU);
+
+      const canvas = document.getElementById("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      const imageData = ctx.createImageData(width, height);
+
+      let memDivs = document.querySelector("#memory");
+      for (let i = 0; i < 0xffff; i++) {
+        memDivs.appendChild(document.createElement("div"));
+      }
+
+      memDivs = document.querySelector("#memory").children;
+
+      for (let i = 0; i < memDivs.length; i++) {
+        memDivs[i].textContent = RAM[i];
+      }
+
+      let registers = document.querySelector("#registers").children;
+
+      function render() {
+        next_frame(); // compute pixels into WASM memory
+        imageData.data.set(heapU8); // copy them into ImageData
+        ctx.putImageData(imageData, 0, 0);
+
+        registers[0].textContent = `a: ${CPU[1]}`;
+        registers[1].textContent = `f: ${CPU[0]}`;
+        registers[2].textContent = `b: ${CPU[3]}`;
+        registers[3].textContent = `c: ${CPU[2]}`;
+        registers[4].textContent = `sp: ${(CPU[5] << 8) | CPU[4]}`;
+        registers[5].textContent = `pc: ${(CPU[7] << 8) | CPU[6]}`;
+
+        requestAnimationFrame(render);
+
+        for (let i = 0; i < 64; i++) {
+          memDivs[i].textContent = RAM[i];
+        }
+      }
+      render();
+    </script>
+  </body>
+</html>
