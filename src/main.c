@@ -1,7 +1,7 @@
 // main.c
 #include <stdint.h>
 
-#define WIDTH 400
+#define WIDTH 160
 #define HEIGHT 144
 
 __attribute__((import_module("env"), import_name("print"))) extern void
@@ -305,14 +305,45 @@ __attribute__((export_name("get_height"))) int get_height(void) {
   return HEIGHT;
 }
 
-#define CYCLE 1
-#define DOT (4 * CYCLE)
-#define SCANLINE (456 * DOT)
-#define FRAME (154 * SCANLINE)
-
 #define ROM0_START 0
 
-#define VRAM_TILE_DATA 0x9000
+#define VRAM_TILE_DATA_BLOCK_2 0x9000
+#define VRAM_TILE_DATA_BLOCK_SIZE 0x800
+#define VRAM_MAP_DATA_9800 0x9800
+#define VRAM_MAP_DATA_SIZE 0x400
+
+#define BIT(byte, n) (((byte) >> (n)) & 1)
+
+uint32_t GRAYS[4] = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF444444, 0xFF000000};
+
+#define DRAW_WIDTH (20)
+#define DRAW_HEIGHT (144)
+
+void draw() {
+  for (int y = 0; y < DRAW_HEIGHT; y++) {
+    for (int x = 0; x < DRAW_WIDTH; x++) {
+      uint8_t tileX = x;
+      uint8_t tileY = y / 8;
+
+      // while tile in the tile db
+      uint8_t tileIndex = Memory[VRAM_MAP_DATA_9800 + tileY * 32 + tileX] * 16;
+
+      // which bytes to read from the 8x8 tile
+      uint8_t py = 2 * (y % 8);
+
+      uint8_t lowByte = Memory[VRAM_TILE_DATA_BLOCK_2 + tileIndex + py];
+      uint8_t highByte = Memory[VRAM_TILE_DATA_BLOCK_2 + tileIndex + py + 1];
+
+      for (int i = 0; i < 8; i++) {
+        uint8_t index = (BIT(lowByte, 8 - i) << 1) | (BIT(highByte, 8 - i));
+        uint32_t grey = GRAYS[index];
+        // push 8 pixels
+        framebuffer[y * 160 + x * 8 + i] = grey;
+      }
+    }
+  }
+}
+
 #define BLACK_TILE 0x0400 // somewhere after the program
 
 // set up program data
@@ -330,7 +361,7 @@ __attribute__((export_name("boot"))) void boot(void) {
 
   /*
   program:
-  ld hl, VRAM_TILE_DATA + 16
+  ld hl, VRAM_TILE_DATA_BLOCK_2 + 16
   ld de, BLACK_TILE
   ld b, 16
 
@@ -348,10 +379,10 @@ __attribute__((export_name("boot"))) void boot(void) {
 
   uint16_t pc = 0;
 
-  // ld hl, VRAM_TILE_DATA + 16
+  // ld hl, VRAM_TILE_DATA_BLOCK_2 + 16
   Memory[pc++] = 0b00100001;
-  Memory[pc++] = LOW_BYTE(VRAM_TILE_DATA + 0x16);
-  Memory[pc++] = HIGH_BYTE(VRAM_TILE_DATA + 0x16);
+  Memory[pc++] = LOW_BYTE(VRAM_TILE_DATA_BLOCK_2);
+  Memory[pc++] = HIGH_BYTE(VRAM_TILE_DATA_BLOCK_2);
 
   // ld de, BLACK_TILE
   Memory[pc++] = 0b00010001;
@@ -383,24 +414,45 @@ __attribute__((export_name("boot"))) void boot(void) {
   // halt
   Memory[pc++] = 0b01110110;
 
-  for (int i = 0; i < 64; i++) {
+  // fill a black tile graphic in VRAM
+  for (int i = 0; i < 16; i++) {
     // set up the tile data
-    Memory[BLACK_TILE + i] = 1;
+    Memory[BLACK_TILE + i] = 0xFF;
+  }
+
+  // fill the tile map with the Nintendo Logo
+  for (int i = 0; i < 12; i++) {
+    // set up the tile data
+    Memory[0x9904 + i] = i + 1;
+    Memory[0x9924 + i] = i + 13;
   }
 }
 
+// timing constants
+#define DOTS_PER_FRAME 70244
+#define CYCLES_PER_FRAME (DOTS_PER_FRAME >> 2)
+
 // compute the next frame in-place
 __attribute__((export_name("next_frame"))) void next_frame(void) {
-  if (cpu.halt) {
-    return;
-  }
 
   static int cycleCount = 0;
 
-  int byte = nextByte();
+  // for now I'm just going to ham-fist the
+  // drawing and hope it performs
+  // @TODO implement this like the PPU
+  draw();
 
-  int lo = (byte & 0b00001111);
-  int hi = (byte & 0b11110000) >> 4;
+  while (cycleCount < CYCLES_PER_FRAME) {
+    cycleCount++;
+    if (cpu.halt) {
+      continue;
+    }
 
-  opTable[hi][lo](byte);
+    int byte = nextByte();
+
+    int lo = (byte & 0b00001111);
+    int hi = (byte & 0b11110000) >> 4;
+
+    opTable[hi][lo](byte);
+  }
 }
