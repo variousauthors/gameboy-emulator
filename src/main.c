@@ -7,6 +7,11 @@
 __attribute__((import_module("env"), import_name("print"))) extern void
 print(int x);
 
+typedef struct CPU {
+  unsigned halt : 1;
+
+} CPU;
+
 typedef struct Registers {
   union {
     struct {
@@ -39,6 +44,9 @@ typedef struct Registers {
 
   uint16_t sp;
   uint16_t pc;
+
+  // stuff we use
+  unsigned halt : 1;
 } Registers;
 
 // framebuffer in linear memory
@@ -46,6 +54,7 @@ uint32_t framebuffer[WIDTH * HEIGHT];
 
 uint8_t Memory[0xFFFF];
 Registers Regs = {0};
+CPU cpu = {0};
 
 uint8_t nextByte() { return Memory[Regs.pc++]; }
 uint16_t nextWord() { return nextByte() | (nextByte() << 8); }
@@ -69,6 +78,9 @@ uint8_t *loadSource[8] = {
     &Regs.b, &Regs.c, &Regs.d, &Regs.e, &Regs.h, &Regs.l, 0, &Regs.a,
 };
 
+// @TODO replace this array with a function so that we can do
+// i == 7 ? Memory[Regs.hl] : r16[i]
+// because right now nothing handles the [hl] forms
 uint8_t *r8[8] = {
     &Regs.b, &Regs.c, &Regs.d, &Regs.e, &Regs.h, &Regs.l, 0, &Regs.a,
 };
@@ -89,6 +101,8 @@ uint16_t *loadDest16[2][4] = {
     {&Regs.bc, &Regs.de, &Regs.hl, &Regs.sp},
     {&Regs.bc, &Regs.de, &Regs.hl, &Regs.af},
 };
+
+void HALT(int byte0) { cpu.halt = 1; }
 
 void LD08(int byte0) {
   // decode instruction
@@ -184,15 +198,75 @@ void LD16(int byte0) {
   *dest = n16;
 }
 
-void HALT(int byte0) { return; }
+// inc/dec for r16
+void ST16(int byte0) {
+  uint16_t *operand = r16[(byte0 & 0b00110000) >> 4];
+
+  if (byte0 & 0b00001000) {
+    (*operand)--;
+  } else {
+    (*operand)++;
+  }
+}
+
+// inc/dec for r8
+void ST08(int byte0) {
+  uint8_t *operand = r8[(byte0 & 0b00111000) >> 3];
+
+  if (byte0 & 0b00000001) {
+    (*operand)--;
+    Regs.f |= 0b01000000;
+  } else {
+    (*operand)++;
+    Regs.f &= ~0b01000000;
+  }
+
+  if (*operand) {
+    // set z to 0
+    Regs.f &= ~0b10000000;
+  } else {
+    // set z to 1
+    Regs.f |= 0b10000000;
+  }
+}
+
+#define Z_FLAG ((Regs.f & 0b10000000) >> 7)
+#define N_FLAG ((Regs.f & 0b01000000) >> 6)
+#define H_FLAG ((Regs.f & 0b00100000) >> 5)
+#define C_FLAG ((Regs.f & 0b00010000) >> 4)
+
+uint8_t cond(uint8_t value) {
+  switch (value) {
+  case 0:
+    return !Z_FLAG;
+  case 1:
+    return Z_FLAG;
+  case 2:
+    return !C_FLAG;
+  case 3:
+    return C_FLAG;
+  default:
+    return 0;
+  }
+}
+
+void JR08(int byte0) {
+  if ((byte0 & 0b00100000) && !cond((byte0 & 0b00011000) >> 3)) {
+    return;
+  }
+
+  uint8_t dest = nextByte();
+
+  Regs.pc = dest;
+}
 
 // clang-format off
 void (*opTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
-/* 0x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
-/* 1x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
-/* 2x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
-/* 3x */ {NOOP, LD16, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP, NOOP, NOOP, LD08, NOOP},
+/* 0x */ {NOOP, LD16, LD08, ST16, ST08, ST08, LD08, NOOP, NOOP, NOOP, LD08, ST16, ST08, ST08, LD08, NOOP},
+/* 1x */ {NOOP, LD16, LD08, ST16, ST08, ST08, LD08, NOOP, JR08, NOOP, LD08, ST16, ST08, ST08, LD08, NOOP},
+/* 2x */ {JR08, LD16, LD08, ST16, ST08, ST08, LD08, NOOP, JR08, NOOP, LD08, ST16, ST08, ST08, LD08, NOOP},
+/* 3x */ {JR08, LD16, LD08, ST16, ST08, ST08, LD08, NOOP, JR08, NOOP, LD08, ST16, ST08, ST08, LD08, NOOP},
 /* 4x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
 /* 5x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
 /* 6x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
@@ -262,9 +336,8 @@ __attribute__((export_name("boot"))) void boot(void) {
 
   .loop
     ld a, [de]
-    ld [hl], a
+    ld [hl+], a
     inc de
-    inc hl
 
     dec b
     jp nz, .loop
@@ -297,6 +370,19 @@ __attribute__((export_name("boot"))) void boot(void) {
   // ld [hl+], a
   Memory[pc++] = 0b00100010;
 
+  // inc de
+  Memory[pc++] = 0b00010011;
+
+  // dec b
+  Memory[pc++] = 0b00000101;
+
+  // jr nz, loop
+  Memory[pc++] = 0b00100000;
+  Memory[pc++] = l0;
+
+  // halt
+  Memory[pc++] = 0b01110110;
+
   for (int i = 0; i < 64; i++) {
     // set up the tile data
     Memory[BLACK_TILE + i] = 1;
@@ -305,6 +391,10 @@ __attribute__((export_name("boot"))) void boot(void) {
 
 // compute the next frame in-place
 __attribute__((export_name("next_frame"))) void next_frame(void) {
+  if (cpu.halt) {
+    return;
+  }
+
   static int cycleCount = 0;
 
   int byte = nextByte();

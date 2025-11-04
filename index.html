@@ -126,8 +126,8 @@
         registers[5].textContent = `e: ${CPU[4]}`;
         registers[6].textContent = `h: ${CPU[7]}`;
         registers[7].textContent = `l: ${CPU[6]}`;
-        registers[8].textContent = `sp: ${(CPU[8] << 8) | CPU[9]}`;
-        registers[9].textContent = `pc: ${(CPU[10] << 8) | CPU[11]}`;
+        registers[8].textContent = `sp: ${(CPU[9] << 8) | CPU[8]}`;
+        registers[9].textContent = `pc: ${(CPU[11] << 8) | CPU[10]}`;
 
         requestAnimationFrame(render);
 
