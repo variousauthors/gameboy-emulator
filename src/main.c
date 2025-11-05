@@ -335,7 +335,7 @@ void draw() {
       uint8_t highByte = Memory[VRAM_TILE_DATA_BLOCK_2 + tileIndex + py + 1];
 
       for (int i = 0; i < 8; i++) {
-        uint8_t index = (BIT(lowByte, 8 - i) << 1) | (BIT(highByte, 8 - i));
+        uint8_t index = (BIT(lowByte, 7 - i) << 1) | (BIT(highByte, 7 - i));
         uint32_t grey = GRAYS[index];
         // push 8 pixels
         framebuffer[y * 160 + x * 8 + i] = grey;
@@ -349,6 +349,8 @@ void draw() {
 // set up program data
 #define LOW_BYTE(word) (word & 0x00FF)
 #define HIGH_BYTE(word) ((word & 0xFF00) >> 8)
+
+#define ROTL8(x, n) (uint8_t)(((x) << (n)) | ((x) >> (8 - (n))))
 
 // compute the next frame in-place
 __attribute__((export_name("boot"))) void boot(void) {
@@ -381,7 +383,7 @@ __attribute__((export_name("boot"))) void boot(void) {
 
   // ld hl, VRAM_TILE_DATA_BLOCK_2 + 16
   Memory[pc++] = 0b00100001;
-  Memory[pc++] = LOW_BYTE(VRAM_TILE_DATA_BLOCK_2);
+  Memory[pc++] = LOW_BYTE(VRAM_TILE_DATA_BLOCK_2 + 16);
   Memory[pc++] = HIGH_BYTE(VRAM_TILE_DATA_BLOCK_2);
 
   // ld de, BLACK_TILE
@@ -414,17 +416,27 @@ __attribute__((export_name("boot"))) void boot(void) {
   // halt
   Memory[pc++] = 0b01110110;
 
+  uint8_t bits = 0b10101010;
+
   // fill a black tile graphic in VRAM
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < 16; i += 2) {
     // set up the tile data
-    Memory[BLACK_TILE + i] = 0xFF;
+    Memory[BLACK_TILE + i] = bits;
+    Memory[BLACK_TILE + i + 1] = bits;
+    bits = ROTL8(bits, 1);
   }
 
-  // fill the tile map with the Nintendo Logo
-  for (int i = 0; i < 12; i++) {
-    // set up the tile data
-    Memory[0x9904 + i] = i + 1;
-    Memory[0x9924 + i] = i + 13;
+  // fill the tile map with a grid
+  for (int y = 0; y < 32; y++) {
+    for (int x = 0; x < 32; x++) {
+      if (y % 2 == 0 && x % 2 == 0) {
+        Memory[VRAM_MAP_DATA_9800 + y * 32 + x] = 1;
+      }
+
+      if (y % 2 == 1 && x % 2 == 1) {
+        Memory[VRAM_MAP_DATA_9800 + y * 32 + x] = 1;
+      }
+    }
   }
 }
 
