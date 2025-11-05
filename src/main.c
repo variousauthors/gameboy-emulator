@@ -52,7 +52,7 @@ typedef struct Registers {
 // framebuffer in linear memory
 uint32_t framebuffer[WIDTH * HEIGHT];
 
-uint8_t Memory[0xFFFF];
+uint8_t Memory[0x10000];
 Registers Regs = {0};
 CPU cpu = {0};
 
@@ -260,6 +260,20 @@ void JR08(int byte0) {
   Regs.pc = dest;
 }
 
+void JP16(int byte0) {
+  if ((byte0 & 0b00000001) && !cond((byte0 & 0b00011000) >> 3)) {
+    return;
+  }
+
+  if (byte0 & 0b0010000) {
+    print(1);
+    Regs.pc = Memory[Regs.hl];
+  } else {
+    print(2);
+    Regs.pc = nextWord();
+  }
+}
+
 // clang-format off
 void (*opTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
@@ -275,7 +289,7 @@ void (*opTable[16][16])(int byte0) = {
 /* 9x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Ax */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Bx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Cx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
+/* Cx */ {NOOP, NOOP, NOOP, JP16, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Ex */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
@@ -359,7 +373,7 @@ __attribute__((export_name("boot"))) void boot(void) {
   Regs.de = 0xFFFF;
   Regs.hl = 0xFFFF;
   Regs.sp = 0xFFFB;
-  Regs.pc = 0x0000;
+  Regs.pc = 0x0100;
 
   /*
   program:
@@ -379,6 +393,7 @@ __attribute__((export_name("boot"))) void boot(void) {
     64 bytes all 1
   */
 
+  /*
   uint16_t pc = 0;
 
   // ld hl, VRAM_TILE_DATA_BLOCK_2 + 16
@@ -438,6 +453,7 @@ __attribute__((export_name("boot"))) void boot(void) {
       }
     }
   }
+  */
 }
 
 // timing constants
@@ -446,6 +462,8 @@ __attribute__((export_name("boot"))) void boot(void) {
 
 // compute the next frame in-place
 __attribute__((export_name("next_frame"))) void next_frame(void) {
+  print(99);
+  return;
 
   static int cycleCount = 0;
 
@@ -461,6 +479,7 @@ __attribute__((export_name("next_frame"))) void next_frame(void) {
     }
 
     int byte = nextByte();
+    print(byte);
 
     int lo = (byte & 0b00001111);
     int hi = (byte & 0b11110000) >> 4;

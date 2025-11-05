@@ -90,12 +90,12 @@
       const fbPtr = get_framebuffer();
       const fbSize = width * height * 4;
       const heapU8 = new Uint8ClampedArray(memory.buffer, fbPtr, fbSize);
-      const RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 0xffff);
+      const RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 0x10000);
       const CPU = new Uint8ClampedArray(memory.buffer, registersPtr, 12);
 
       // connect the ROM
       const fileData = new Uint8Array(await response.arrayBuffer());
-      RAM.set(fileData.subarray(0, 0x7FFF));
+      RAM.set(fileData.subarray(0, 0x8000));
 
       console.log(RAM);
       console.log(CPU);
