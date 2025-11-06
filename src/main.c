@@ -488,11 +488,24 @@ uint16_t (*get_nextWord(void))(void) {
   return cpu.boot ? nextWordROM : nextWordBOOT;
 }
 
+__attribute__((export_name("next_instruction"))) void next_instruction(void) {
+  if (cpu.halt) {
+    return;
+  }
+
+  nextByte = get_nextByte();
+  nextWord = get_nextWord();
+
+  int byte = nextByte();
+
+  int lo = (byte & 0b00001111);
+  int hi = (byte & 0b11110000) >> 4;
+
+  opTable[hi][lo](byte);
+}
+
 // compute the next frame in-place
 __attribute__((export_name("next_frame"))) void next_frame(void) {
-  print(99);
-  return;
-
   static int cycleCount = 0;
   nextByte = get_nextByte();
   nextWord = get_nextWord();

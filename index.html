@@ -60,6 +60,12 @@
       <div id="pc"></div>
     </div>
     <canvas id="canvas"></canvas>
+    <div>
+      <button id="run-button">RUN</button>
+      <button id="stop-button">STOP</button>
+      <button id="step-button">STEP</button>
+      <button id="frame-button">FRAME</button>
+    </div>
     <script type="module">
       const wasm = await WebAssembly.instantiateStreaming(fetch("main.wasm"), {
         env: {
@@ -74,6 +80,7 @@
         get_height,
         get_framebuffer,
         next_frame,
+        next_instruction,
         boot,
       } = wasm.instance.exports;
 
@@ -116,11 +123,7 @@
 
       let registers = document.querySelector("#registers").children;
 
-      function render() {
-        next_frame(); // compute pixels into WASM memory
-        imageData.data.set(heapU8); // copy them into ImageData
-        ctx.putImageData(imageData, 0, 0);
-
+      function updateRegisters () {
         registers[0].textContent = `a: ${CPU[1]}`;
         registers[1].textContent = `f: ${CPU[0]}`;
         registers[2].textContent = `b: ${CPU[3]}`;
@@ -131,14 +134,45 @@
         registers[7].textContent = `l: ${CPU[6]}`;
         registers[8].textContent = `sp: ${(CPU[9] << 8) | CPU[8]}`;
         registers[9].textContent = `pc: ${(CPU[11] << 8) | CPU[10]}`;
+      }
 
-        requestAnimationFrame(render);
+      function updateScreen () {
+        imageData.data.set(heapU8); // copy them into ImageData
+        ctx.putImageData(imageData, 0, 0);
+      }
+
+      let requestId;
+
+      function render() {
+        next_frame(); // compute pixels into WASM memory
+        updateRegisters();
+        updateScreen();
+
+        requestId = requestAnimationFrame(render);
 
         for (let i = 0; i < 64; i++) {
           memDivs[i].textContent = RAM[i];
         }
       }
-      render();
+
+      document.querySelector("#step-button").addEventListener("click", (event) => {
+        next_instruction();
+        updateRegisters();
+      })
+
+      document.querySelector("#run-button").addEventListener("click", (event) => {
+        render();
+      })
+
+      document.querySelector("#stop-button").addEventListener("click", (event) => {
+        cancelAnimationFrame(requestId);
+      })
+
+      document.querySelector("#frame-button").addEventListener("click", (event) => {
+        next_frame(); // compute pixels into WASM memory
+        updateRegisters();
+        updateScreen();
+      })
     </script>
   </body>
 </html>
