@@ -61,9 +61,6 @@
     </div>
     <canvas id="canvas"></canvas>
     <script type="module">
-      const response = await fetch("ark.gb");
-      console.log(response);
-
       const wasm = await WebAssembly.instantiateStreaming(fetch("main.wasm"), {
         env: {
           print: (arg) => console.log("WASM says:", arg),
@@ -90,12 +87,12 @@
       const fbPtr = get_framebuffer();
       const fbSize = width * height * 4;
       const heapU8 = new Uint8ClampedArray(memory.buffer, fbPtr, fbSize);
-      const RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 0x10000);
+      const RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 64 * 1024);
       const CPU = new Uint8ClampedArray(memory.buffer, registersPtr, 12);
 
-      // connect the ROM
+      const response = await fetch("ark.gb");
       const fileData = new Uint8Array(await response.arrayBuffer());
-      RAM.set(fileData.subarray(0, 0x8000));
+      RAM.set(fileData.subarray(0, 32 * 1024));
 
       console.log(RAM);
       console.log(CPU);

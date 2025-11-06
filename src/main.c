@@ -1,4 +1,6 @@
 // main.c
+#include "boot-rom.c"
+#include "boot-rom.h"
 #include <stdint.h>
 
 #define WIDTH 160
@@ -9,7 +11,7 @@ print(int x);
 
 typedef struct CPU {
   unsigned halt : 1;
-
+  unsigned boot : 1;
 } CPU;
 
 typedef struct Registers {
@@ -56,8 +58,14 @@ uint8_t Memory[0x10000];
 Registers Regs = {0};
 CPU cpu = {0};
 
-uint8_t nextByte() { return Memory[Regs.pc++]; }
-uint16_t nextWord() { return nextByte() | (nextByte() << 8); }
+uint8_t (*nextByte)(void);
+uint16_t (*nextWord)(void);
+
+uint8_t nextByteBOOT() { return BootROM[Regs.pc++]; }
+uint16_t nextWordBOOT() { return nextByteBOOT() | (nextByteBOOT() << 8); }
+
+uint8_t nextByteROM() { return Memory[Regs.pc++]; }
+uint16_t nextWordROM() { return nextByteROM() | (nextByteROM() << 8); }
 
 // a simple animation counter
 static unsigned frame = 0;
@@ -265,13 +273,25 @@ void JP16(int byte0) {
     return;
   }
 
-  if (byte0 & 0b0010000) {
-    print(1);
+  if (byte0 & 0b00100000) {
     Regs.pc = Memory[Regs.hl];
   } else {
-    print(2);
     Regs.pc = nextWord();
   }
+
+  uint8_t dest = nextByte();
+
+  Regs.pc = dest;
+}
+
+void _DI_(int byte0) { print(99); }
+
+void LDH_(int byte0) {
+  // this is a special load and in particular this:
+  // ldh [0xFF50], a
+  // is what tells the GB to stop using the boot rom
+  // so we will detect it here and then set cpu.boot = true
+  // and switch nextByte to refer to nextByteROM
 }
 
 // clang-format off
@@ -292,7 +312,7 @@ void (*opTable[16][16])(int byte0) = {
 /* Cx */ {NOOP, NOOP, NOOP, JP16, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Ex */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
+/* Fx */ {NOOP, NOOP, NOOP, _DI_, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 };
 // clang-format on
 
@@ -460,12 +480,22 @@ __attribute__((export_name("boot"))) void boot(void) {
 #define DOTS_PER_FRAME 70244
 #define CYCLES_PER_FRAME (DOTS_PER_FRAME >> 2)
 
+uint8_t (*get_nextByte(void))(void) {
+  return cpu.boot ? nextByteROM : nextByteBOOT;
+}
+
+uint16_t (*get_nextWord(void))(void) {
+  return cpu.boot ? nextWordROM : nextWordBOOT;
+}
+
 // compute the next frame in-place
 __attribute__((export_name("next_frame"))) void next_frame(void) {
   print(99);
   return;
 
   static int cycleCount = 0;
+  nextByte = get_nextByte();
+  nextWord = get_nextWord();
 
   // for now I'm just going to ham-fist the
   // drawing and hope it performs
@@ -479,7 +509,6 @@ __attribute__((export_name("next_frame"))) void next_frame(void) {
     }
 
     int byte = nextByte();
-    print(byte);
 
     int lo = (byte & 0b00001111);
     int hi = (byte & 0b11110000) >> 4;
