@@ -359,7 +359,7 @@ __attribute__((export_name("boot"))) void boot(void) {
   Regs.de = 0xFFFF;
   Regs.hl = 0xFFFF;
   Regs.sp = 0xFFFB;
-  Regs.pc = 0x0000;
+  Regs.pc = 0x0100;
 
   /*
   program:
@@ -461,6 +461,7 @@ __attribute__((export_name("next_frame"))) void next_frame(void) {
     }
 
     int byte = nextByte();
+    print(byte);
 
     int lo = (byte & 0b00001111);
     int hi = (byte & 0b11110000) >> 4;
