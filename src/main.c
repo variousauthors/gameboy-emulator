@@ -260,6 +260,24 @@ void JR08(int byte0) {
   Regs.pc = dest;
 }
 
+void JP16(int byte0) {
+  if ((byte0 & 0b00000001) && !cond((byte0 & 0b00011000) >> 3)) {
+    return;
+  }
+
+  if (byte0 & 0b00100000) {
+    Regs.pc = Memory[Regs.hl];
+  } else {
+    Regs.pc = nextWord();
+  }
+
+  uint8_t dest = nextByte();
+
+  Regs.pc = dest;
+}
+
+void _DI_(int byte0) { print(99); }
+
 // clang-format off
 void (*opTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
@@ -275,10 +293,10 @@ void (*opTable[16][16])(int byte0) = {
 /* 9x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Ax */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Bx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Cx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
+/* Cx */ {NOOP, NOOP, NOOP, JP16, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Ex */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
+/* Fx */ {NOOP, NOOP, NOOP, _DI_, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 };
 // clang-format on
 
@@ -461,7 +479,6 @@ __attribute__((export_name("next_frame"))) void next_frame(void) {
     }
 
     int byte = nextByte();
-    print(byte);
 
     int lo = (byte & 0b00001111);
     int hi = (byte & 0b11110000) >> 4;
