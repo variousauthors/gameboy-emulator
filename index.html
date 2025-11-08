@@ -2,10 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Pure C WASM Pixel Blit</title>
+    <title>Pure C WASM GB Emulator</title>
     <style>
       body {
-        background: #000;
         margin: 0;
         display: flex;
         height: 100vh;
@@ -17,19 +16,12 @@
         border: 1px solid #333;
       }
 
-      #registers {
-        color: white;
-      }
-
       #memory {
         display: grid;
         grid-template-columns: repeat(16, 1fr);
         gap: 1px;
         height: 100px;
         overflow-y: scroll;
-        position: absolute;
-        top: 0;
-        left: 0;
       }
 
       #memory div {
@@ -44,7 +36,10 @@
     </style>
   </head>
   <body>
-    <div id="memory"></div>
+    <div>
+      <div id="memory"></div>
+      <input id="address" type="number" value="0" />
+    </div>
     <div id="registers">
       <div id="a"></div>
       <div id="f"></div>
@@ -59,120 +54,174 @@
       <div id="sp"></div>
       <div id="pc"></div>
     </div>
-    <canvas id="canvas"></canvas>
     <div>
-      <button id="run-button">RUN</button>
-      <button id="stop-button">STOP</button>
-      <button id="step-button">STEP</button>
-      <button id="frame-button">FRAME</button>
+      <canvas id="canvas"></canvas>
+      <div>
+        <button id="run-button">RUN</button>
+        <button id="stop-button">STOP</button>
+        <button id="step-button">STEP</button>
+        <button id="frame-button">FRAME</button>
+      </div>
+      <div>Next: <span id="next-instruction"></span></div>
     </div>
     <script type="module">
-      const wasm = await WebAssembly.instantiateStreaming(fetch("main.wasm"), {
-        env: {
-          print: (arg) => console.log("WASM says:", arg),
+        const wasm = await WebAssembly.instantiateStreaming(fetch("main.wasm"), {
+          env: {
+            print: (arg) => console.log("WASM says:", arg),
+          }
+        });
+        const {
+          memory,
+          get_width,
+          get_memory,
+          get_registers,
+          get_height,
+          get_framebuffer,
+          next_frame,
+          next_instruction,
+          boot,
+        } = wasm.instance.exports;
+
+        boot();
+
+        const memoryPtr = get_memory();
+        const registersPtr = get_registers();
+
+        const width = get_width();
+        const height = get_height();
+        const fbPtr = get_framebuffer();
+        const fbSize = width * height * 4;
+        const heapU8 = new Uint8ClampedArray(memory.buffer, fbPtr, fbSize);
+        const RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 64 * 1024);
+        const CPU = new Uint8ClampedArray(memory.buffer, registersPtr, 12);
+
+        const response = await fetch("ark.gb");
+        const fileData = new Uint8Array(await response.arrayBuffer());
+        RAM.set(fileData.subarray(0, 32 * 1024));
+
+        const disassemblyLookup = [
+          ["NOP", "LD BC, n16", "LD [BC], A", "INC BC", "INC B", "DEC B", "LD B, n8", "RLCA", "LD [a16], SP", "ADD HL, BC", "LD A, [BC]", "DEC BC", "INC C", "DEC C", "LD C, n8", "RRCA"],
+          ["STOP n8", "LD DE, n16", "LD [DE], A", "INC DE", "INC D", "DEC D", "LD D, n8", "RLA", "JR e8", "ADD HL, DE", "LD A, [DE]", "DEC DE", "INC E", "DEC E", "LD E, n8", "RRA"],
+          ["JR NZ, e8", "LD HL, n16", "LD [HL+], A", "INC HL", "INC H", "DEC H", "LD H, n8", "DAA", "JR Z, e8", "ADD HL, HL", "LD A, [HL+]", "DEC HL", "INC L", "DEC L", "LD L, n8", "CPL"],
+          ["JR NC, e8", "LD SP, n16", "LD [HL-], A", "INC SP", "INC [HL]", "DEC [HL]", "LD [HL], n8", "SCF", "JR C, e8", "ADD HL, SP", "LD A, [HL-]", "DEC SP", "INC A", "DEC A", "LD A, n8", "CCF"],
+          ["LD B, B", "LD B, C", "LD B, D", "LD B, E", "LD B, H", "LD B, L", "LD B, [HL]", "LD B, A", "LD C, B", "LD C, C", "LD C, D", "LD C, E", "LD C, H", "LD C, L", "LD C, [HL]", "LD C, A"],
+          ["LD D, B", "LD D, C", "LD D, D", "LD D, E", "LD D, H", "LD D, L", "LD D, [HL]", "LD D, A", "LD E, B", "LD E, C", "LD E, D", "LD E, E", "LD E, H", "LD E, L", "LD E, [HL]", "LD E, A"],
+          ["LD H, B", "LD H, C", "LD H, D", "LD H, E", "LD H, H", "LD H, L", "LD H, [HL]", "LD H, A", "LD L, B", "LD L, C", "LD L, D", "LD L, E", "LD L, H", "LD L, L", "LD L, [HL]", "LD L, A"],
+          ["LD [HL], B", "LD [HL], C", "LD [HL], D", "LD [HL], E", "LD [HL], H", "LD [HL], L", "HALT", "LD [HL], A", "LD A, B", "LD A, C", "LD A, D", "LD A, E", "LD A, H", "LD A, L", "LD A, [HL]", "LD A, A"],
+          ["ADD A, B", "ADD A, C", "ADD A, D", "ADD A, E", "ADD A, H", "ADD A, L", "ADD A, [HL]", "ADD A, A", "ADC A, B", "ADC A, C", "ADC A, D", "ADC A, E", "ADC A, H", "ADC A, L", "ADC A, [HL]", "ADC A, A"],
+          ["SUB A, B", "SUB A, C", "SUB A, D", "SUB A, E", "SUB A, H", "SUB A, L", "SUB A, [HL]", "SUB A, A", "SBC A, B", "SBC A, C", "SBC A, D", "SBC A, E", "SBC A, H", "SBC A, L", "SBC A, [HL]", "SBC A, A"],
+          ["AND A, B", "AND A, C", "AND A, D", "AND A, E", "AND A, H", "AND A, L", "AND A, [HL]", "AND A, A", "XOR A, B", "XOR A, C", "XOR A, D", "XOR A, E", "XOR A, H", "XOR A, L", "XOR A, [HL]", "XOR A, A"],
+          ["OR A, B", "OR A, C", "OR A, D", "OR A, E", "OR A, H", "OR A, L", "OR A, [HL]", "OR A, A", "CP A, B", "CP A, C", "CP A, D", "CP A, E", "CP A, H", "CP A, L", "CP A, [HL]", "CP A, A"],
+          ["RET NZ", "POP BC", "JP NZ, a16", "JP a16", "CALL NZ, a16", "PUSH BC", "ADD A, n8", "RST $00", "RET Z", "RET", "JP Z, a16", "PREFIX", "CALL Z, a16", "CALL a16", "ADC A, n8", "RST $08"],
+          ["RET NC", "POP DE", "JP NC, a16", " - ", "CALL NC, a16", "PUSH DE", "SUB A, n8", "RST $10", "RET C", "RETI", "JP C, a16", " - ", "CALL C, a16", " - ", "SBC A, n8", "RST $18"],
+          ["LDH [a8], A", "POP HL", "LDH [C], A", " - ", " - ", "PUSH HL", "AND A, n8", "RST $20", "ADD SP, e8", "JP HL", "LD [a16], A", " - ", " - ", " - ", "XOR A, n8", "RST $28"],
+          ["LDH A, [a8]", "POP AF", "LDH A, [C]", "DI", " - ", "PUSH AF", "OR A, n8", "RST $30", "LD HL, SP + e8", "LD SP, HL", "LD A, [a16]", "EI", " - ", " - ", "CP A, n8", "RST $38"],
+        ]
+
+        function disassemble (byte) {
+          const lo = (byte & 0b00001111);
+          const hi = (byte & 0b11110000) >> 4;
+
+          return disassemblyLookup[hi][lo];
         }
-      });
-      const {
-        memory,
-        get_width,
-        get_memory,
-        get_registers,
-        get_height,
-        get_framebuffer,
-        next_frame,
-        next_instruction,
-        boot,
-      } = wasm.instance.exports;
 
-      boot();
+        function getPC (cpu) {
+          return (CPU[11] << 8) | CPU[10];
+        }
 
-      const memoryPtr = get_memory();
-      const registersPtr = get_registers();
+        console.log(RAM);
+        console.log(CPU);
 
-      const width = get_width();
-      const height = get_height();
-      const fbPtr = get_framebuffer();
-      const fbSize = width * height * 4;
-      const heapU8 = new Uint8ClampedArray(memory.buffer, fbPtr, fbSize);
-      const RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 64 * 1024);
-      const CPU = new Uint8ClampedArray(memory.buffer, registersPtr, 12);
+        const canvas = document.getElementById("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        const imageData = ctx.createImageData(width, height);
 
-      const response = await fetch("ark.gb");
-      const fileData = new Uint8Array(await response.arrayBuffer());
-      RAM.set(fileData.subarray(0, 32 * 1024));
-
-      console.log(RAM);
-      console.log(CPU);
-
-      const canvas = document.getElementById("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      const imageData = ctx.createImageData(width, height);
-
-      let memDivs = document.querySelector("#memory");
-      for (let i = 0; i < 0xffff; i++) {
-        memDivs.appendChild(document.createElement("div"));
-      }
-
-      memDivs = document.querySelector("#memory").children;
-
-      for (let i = 0; i < memDivs.length; i++) {
-        memDivs[i].textContent = RAM[i];
-      }
-
-      let registers = document.querySelector("#registers").children;
-
-      function updateRegisters () {
-        registers[0].textContent = `a: ${CPU[1]}`;
-        registers[1].textContent = `f: ${CPU[0]}`;
-        registers[2].textContent = `b: ${CPU[3]}`;
-        registers[3].textContent = `c: ${CPU[2]}`;
-        registers[4].textContent = `d: ${CPU[5]}`;
-        registers[5].textContent = `e: ${CPU[4]}`;
-        registers[6].textContent = `h: ${CPU[7]}`;
-        registers[7].textContent = `l: ${CPU[6]}`;
-        registers[8].textContent = `sp: ${(CPU[9] << 8) | CPU[8]}`;
-        registers[9].textContent = `pc: ${(CPU[11] << 8) | CPU[10]}`;
-      }
-
-      function updateScreen () {
-        imageData.data.set(heapU8); // copy them into ImageData
-        ctx.putImageData(imageData, 0, 0);
-      }
-
-      let requestId;
-
-      function render() {
-        next_frame(); // compute pixels into WASM memory
-        updateRegisters();
-        updateScreen();
-
-        requestId = requestAnimationFrame(render);
-
+        let memDivs = document.querySelector("#memory");
         for (let i = 0; i < 64; i++) {
-          memDivs[i].textContent = RAM[i];
+          memDivs.appendChild(document.createElement("div"));
         }
-      }
 
-      document.querySelector("#step-button").addEventListener("click", (event) => {
-        next_instruction();
-        updateRegisters();
-      })
+        let nextInstruction = document.querySelector("#next-instruction");
+        nextInstruction.textContent = disassemble(RAM[getPC(CPU)]);
 
-      document.querySelector("#run-button").addEventListener("click", (event) => {
-        render();
-      })
+        function updateNextInstruction () {
+          nextInstruction.textContent = disassemble(RAM[getPC(CPU)]);
+        }
 
-      document.querySelector("#stop-button").addEventListener("click", (event) => {
-        cancelAnimationFrame(requestId);
-      })
+        let currentAddress = 0
+        const addressField = document.querySelector("#address");
+        addressField.addEventListener("change", (event) => {
+          console.log("change", event.target.value)
+          currentAddress = parseInt(event.target.value);
+          updateMemory();
+        })
 
-      document.querySelector("#frame-button").addEventListener("click", (event) => {
-        next_frame(); // compute pixels into WASM memory
-        updateRegisters();
-        updateScreen();
-      })
+        function updateMemory () {
+          memDivs = document.querySelector("#memory").children;
+
+          for (let i = 0; i < 64; i++) {
+            console.log(i, currentAddress, i + currentAddress, RAM[i + currentAddress]);
+            memDivs[i].textContent = RAM[i + currentAddress];
+          }
+        }
+
+        updateMemory();
+
+        let registers = document.querySelector("#registers").children;
+
+        function updateRegisters () {
+          registers[0].textContent = `a: ${CPU[1]}`;
+          registers[1].textContent = `f: ${CPU[0]}`;
+          registers[2].textContent = `b: ${CPU[3]}`;
+          registers[3].textContent = `c: ${CPU[2]}`;
+          registers[4].textContent = `d: ${CPU[5]}`;
+          registers[5].textContent = `e: ${CPU[4]}`;
+          registers[6].textContent = `h: ${CPU[7]}`;
+          registers[7].textContent = `l: ${CPU[6]}`;
+          registers[8].textContent = `sp: ${(CPU[9] << 8) | CPU[8]}`;
+          registers[9].textContent = `pc: ${getPC(CPU)}`;
+        }
+
+        function updateScreen () {
+          imageData.data.set(heapU8); // copy them into ImageData
+          ctx.putImageData(imageData, 0, 0);
+        }
+
+        let requestId;
+
+        function render() {
+          next_frame(); // compute pixels into WASM memory
+          updateNextInstruction();
+          updateRegisters();
+          updateScreen();
+          updateMemory();
+
+          requestId = requestAnimationFrame(render);
+        }
+
+        document.querySelector("#step-button").addEventListener("click", (event) => {
+          next_instruction();
+          updateRegisters();
+          updateNextInstruction();
+          updateMemory();
+        })
+
+        document.querySelector("#run-button").addEventListener("click", (event) => {
+          render();
+        })
+
+        document.querySelector("#stop-button").addEventListener("click", (event) => {
+          cancelAnimationFrame(requestId);
+        })
+
+        document.querySelector("#frame-button").addEventListener("click", (event) => {
+          next_frame(); // compute pixels into WASM memory
+          updateRegisters();
+          updateScreen();
+          updateMemory();
+        })
     </script>
   </body>
 </html>
