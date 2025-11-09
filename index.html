@@ -10,6 +10,7 @@
         height: 100vh;
         align-items: center;
         justify-content: center;
+        gap: 10px;
       }
       canvas {
         image-rendering: pixelated;
@@ -18,19 +19,17 @@
 
       #memory {
         display: grid;
-        grid-template-columns: repeat(16, 1fr);
+        grid-template-columns: 2fr repeat(16, 1fr);
         gap: 1px;
-        height: 100px;
+        height: 120px;
         overflow-y: scroll;
       }
 
       #memory div {
-        width: 20px; /* optional, can use auto or fixed */
-        height: 20px; /* square cells look nice */
-        background: #eee;
+        padding: 2px;
         text-align: center;
         line-height: 20px;
-        font-size: 10px;
+        font-size: 12px;
         border: 1px solid #ccc; /* optional for visibility */
       }
     </style>
@@ -139,7 +138,7 @@
         const imageData = ctx.createImageData(width, height);
 
         let memDivs = document.querySelector("#memory");
-        for (let i = 0; i < 64; i++) {
+        for (let i = 0; i < 64 + 4; i++) {
           memDivs.appendChild(document.createElement("div"));
         }
 
@@ -150,20 +149,33 @@
           nextInstruction.textContent = disassemble(RAM[getPC(CPU)]);
         }
 
-        let currentAddress = 0
+        let focusedAddress = 0
         const addressField = document.querySelector("#address");
         addressField.addEventListener("change", (event) => {
           console.log("change", event.target.value)
-          currentAddress = parseInt(event.target.value);
+          focusedAddress = parseInt(event.target.value);
           updateMemory();
         })
 
+        function toHex(num, width = 4, uppercase = true, prefix = false) {
+          let hex = num.toString(16);
+          if (uppercase) hex = hex.toUpperCase();
+          if (width > 0) hex = hex.padStart(width, '0');
+          if (prefix) hex = `0x${hex}`;
+          return hex;
+        }
+
         function updateMemory () {
+          const baseAddress = focusedAddress - focusedAddress % 16;
           memDivs = document.querySelector("#memory").children;
 
-          for (let i = 0; i < 64; i++) {
-            console.log(i, currentAddress, i + currentAddress, RAM[i + currentAddress]);
-            memDivs[i].textContent = RAM[i + currentAddress];
+          for (let y = 0; y < 4; y++) {
+            memDivs[y * 17].textContent = toHex(y * 16 + baseAddress);
+
+            for (let x = 0; x < 16; x++) {
+              memDivs[y * 17 + x + 1].style.backgroundColor = (y * 16 + x + baseAddress === focusedAddress) ? "yellow" : "white";
+              memDivs[y * 17 + x + 1].textContent = toHex(RAM[y * 16 + x + baseAddress], 2);
+            }
           }
         }
 
@@ -184,10 +196,14 @@
           registers[9].textContent = `pc: ${getPC(CPU)}`;
         }
 
+        updateRegisters();
+
         function updateScreen () {
           imageData.data.set(heapU8); // copy them into ImageData
           ctx.putImageData(imageData, 0, 0);
         }
+
+        updateScreen();
 
         let requestId;
 
