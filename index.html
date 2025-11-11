@@ -37,7 +37,12 @@
   <body>
     <div>
       <div id="memory"></div>
+      <label>GOTO:</label>
       <input id="address" type="number" value="0" />
+      <input type="radio" name="follow" id="follow-pc" />
+      <label>PC</label>
+      <input type="radio" name="follow" id="follow-hl" />
+      <label>HL</label>
     </div>
     <div id="registers">
       <div id="a"></div>
@@ -128,6 +133,10 @@
           return (CPU[11] << 8) | CPU[10];
         }
 
+        function getHL (cpu) {
+          return (CPU[7] << 8) | CPU[6];
+        }
+
         console.log(RAM);
         console.log(CPU);
 
@@ -149,13 +158,62 @@
           nextInstruction.textContent = disassemble(RAM[getPC(CPU)]);
         }
 
+        let followPC = false;
+        const followPCRadio = document.querySelector("#follow-pc");
+        let followHL = false;
+        const followHLRadio = document.querySelector("#follow-hl");
+
+        function setFollowRadioChecked (follow) {
+          switch (follow) {
+            case "PC": {
+              followPC = true;
+              followPCRadio.checked = true;
+              followHL = false;
+              followHLRadio.checked = false;
+              break;
+            }
+            case "HL": {
+              followPC = false;
+              followPCRadio.checked = false;
+              followHL = true;
+              followHLRadio.checked = true;
+              break;
+            }
+            case "NO": {
+              followPC = false;
+              followPCRadio.checked = false;
+              followHL = false;
+              followHLRadio.checked = false;
+              break;
+            }
+          }
+        }
+
+        followPCRadio.addEventListener("click", (event) => {
+          setFollowRadioChecked("PC");
+          updateMemory();
+        })
+
+        followHLRadio.addEventListener("click", (event) => {
+          setFollowRadioChecked("HL");
+          updateMemory();
+        })
+
         let focusedAddress = 0
         const addressField = document.querySelector("#address");
         addressField.addEventListener("change", (event) => {
-          console.log("change", event.target.value)
           focusedAddress = parseInt(event.target.value);
+          setFollowRadioChecked("NO");
           updateMemory();
         })
+
+        addressField.addEventListener("keydown", (event) => {
+          if (event.key === 'Enter') {
+            focusedAddress = parseInt(event.target.value);
+            setFollowRadioChecked("NO");
+            updateMemory();
+          }
+        });
 
         function toHex(num, width = 4, uppercase = true, prefix = false) {
           let hex = num.toString(16);
@@ -166,14 +224,18 @@
         }
 
         function updateMemory () {
-          const baseAddress = focusedAddress - focusedAddress % 16;
+          const targetAddress = followHL ? getHL(CPU) 
+            : followPC ? getPC(CPU) 
+            : focusedAddress;
+
+          const baseAddress = targetAddress - targetAddress % 16;
           memDivs = document.querySelector("#memory").children;
 
           for (let y = 0; y < 4; y++) {
             memDivs[y * 17].textContent = toHex(y * 16 + baseAddress);
 
             for (let x = 0; x < 16; x++) {
-              memDivs[y * 17 + x + 1].style.backgroundColor = (y * 16 + x + baseAddress === focusedAddress) ? "yellow" : "white";
+              memDivs[y * 17 + x + 1].style.backgroundColor = (y * 16 + x + baseAddress === targetAddress) ? "yellow" : "white";
               memDivs[y * 17 + x + 1].textContent = toHex(RAM[y * 16 + x + baseAddress], 2);
             }
           }

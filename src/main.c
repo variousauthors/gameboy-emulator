@@ -269,7 +269,8 @@ void JR08(int byte0) {
 }
 
 void JP16(int byte0) {
-  if ((byte0 & 0b00000001) && !cond((byte0 & 0b00011000) >> 3)) {
+  print(byte0);
+  if (!(byte0 & 0b00000001) && !cond((byte0 & 0b00011000) >> 3)) {
     return;
   }
 
@@ -278,10 +279,6 @@ void JP16(int byte0) {
   } else {
     Regs.pc = nextWord();
   }
-
-  uint8_t dest = nextByte();
-
-  Regs.pc = dest;
 }
 
 void _DI_(int byte0) { print(99); }
@@ -395,6 +392,8 @@ __attribute__((export_name("boot"))) void boot(void) {
   Regs.sp = 0xFFFB;
   Regs.pc = 0x0100;
 
+  cpu.boot = 1;
+
   /*
   program:
   ld hl, VRAM_TILE_DATA_BLOCK_2 + 16
@@ -489,6 +488,7 @@ uint16_t (*get_nextWord(void))(void) {
 }
 
 __attribute__((export_name("next_instruction"))) void next_instruction(void) {
+  print(99);
   if (cpu.halt) {
     return;
   }
@@ -496,7 +496,9 @@ __attribute__((export_name("next_instruction"))) void next_instruction(void) {
   nextByte = get_nextByte();
   nextWord = get_nextWord();
 
+  print(Regs.pc);
   int byte = nextByte();
+  print(byte);
 
   int lo = (byte & 0b00001111);
   int hi = (byte & 0b11110000) >> 4;
