@@ -231,6 +231,7 @@
           const baseAddress = targetAddress - targetAddress % 16;
           memDivs = document.querySelector("#memory").children;
 
+          // @TODO need to stop rendering past address 0xFFFF
           for (let y = 0; y < 4; y++) {
             memDivs[y * 17].textContent = toHex(y * 16 + baseAddress);
 
