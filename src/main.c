@@ -238,21 +238,30 @@ void ST08(int byte0) {
   }
 }
 
-#define Z_FLAG ((Regs.f & 0b10000000) >> 7)
-#define N_FLAG ((Regs.f & 0b01000000) >> 6)
-#define H_FLAG ((Regs.f & 0b00100000) >> 5)
-#define C_FLAG ((Regs.f & 0b00010000) >> 4)
+#define Z_FLAG (0b10000000)
+#define N_FLAG (0b01000000)
+#define H_FLAG (0b00100000)
+#define C_FLAG (0b00010000)
+
+// pass in a flag
+#define SET_FLAG(value) (Regs.f |= (value))
+#define CLEAR_FLAG(value) (Regs.f &= ~(value))
+
+#define GET_Z_FLAG ((Regs.f & 0b10000000) >> 7)
+#define GET_N_FLAG ((Regs.f & 0b01000000) >> 6)
+#define GET_H_FLAG ((Regs.f & 0b00100000) >> 5)
+#define GET_C_FLAG ((Regs.f & 0b00010000) >> 4)
 
 uint8_t cond(uint8_t value) {
   switch (value) {
   case 0:
-    return !Z_FLAG;
+    return !GET_Z_FLAG;
   case 1:
-    return Z_FLAG;
+    return GET_Z_FLAG;
   case 2:
-    return !C_FLAG;
+    return !GET_C_FLAG;
   case 3:
-    return C_FLAG;
+    return GET_C_FLAG;
   default:
     return 0;
   }
@@ -269,7 +278,6 @@ void JR08(int byte0) {
 }
 
 void JP16(int byte0) {
-  print(byte0);
   if (!(byte0 & 0b00000001) && !cond((byte0 & 0b00011000) >> 3)) {
     return;
   }
@@ -281,7 +289,7 @@ void JP16(int byte0) {
   }
 }
 
-void _DI_(int byte0) { print(99); }
+void _DI_(int byte0) {}
 
 void LDH_(int byte0) {
   // this is a special load and in particular this:
@@ -289,6 +297,65 @@ void LDH_(int byte0) {
   // is what tells the GB to stop using the boot rom
   // so we will detect it here and then set cpu.boot = true
   // and switch nextByte to refer to nextByteROM
+}
+
+#define ADD 0
+#define ADC 1
+#define SUB 2
+#define SBC 3
+#define AND 4
+#define XOR 5
+#define _OR 6
+#define _CP 7
+
+// 8-bit arithmetic
+void AR08(int byte0) {
+  print(98);
+  print(byte0);
+  uint8_t operator = (byte0 & 0b00111000) >> 3;
+  uint8_t operand = (byte0 & 0b00000111);
+  print(operator);
+  print(operand);
+
+  switch (operator) {
+  case ADD: {
+    uint8_t result = Regs.a + *r8[operand];
+
+    CLEAR_FLAG(N_FLAG);
+    result ? SET_FLAG(Z_FLAG) : CLEAR_FLAG(Z_FLAG);
+    // @TODO check 8-bit carry
+    // @TODO check 4-bit carry
+
+    break;
+  }
+  case ADC: {
+    break;
+  }
+  case SUB: {
+    break;
+  }
+  case SBC: {
+    break;
+  }
+  case AND: {
+    break;
+  }
+  case XOR: {
+    print(99);
+    uint8_t result = Regs.a ^ *r8[operand];
+    Regs.a = result;
+
+    CLEAR_FLAG(N_FLAG);
+    result ? SET_FLAG(Z_FLAG) : CLEAR_FLAG(Z_FLAG);
+    break;
+  }
+  case _OR: {
+    break;
+  }
+  case _CP: {
+    break;
+  }
+  }
 }
 
 // clang-format off
@@ -302,10 +369,10 @@ void (*opTable[16][16])(int byte0) = {
 /* 5x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
 /* 6x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
 /* 7x */ {LD08, LD08, LD08, LD08, LD08, LD08, HALT, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
-/* 8x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 9x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Ax */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Bx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
+/* 8x */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
+/* 9x */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
+/* Ax */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
+/* Bx */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
 /* Cx */ {NOOP, NOOP, NOOP, JP16, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* Ex */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
@@ -493,7 +560,6 @@ uint16_t (*get_nextWord(void))(void) {
 }
 
 __attribute__((export_name("next_instruction"))) void next_instruction(void) {
-  print(99);
   if (cpu.halt) {
     return;
   }
