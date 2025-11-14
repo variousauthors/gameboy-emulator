@@ -130,11 +130,38 @@
           ["LDH A, [a8]", "POP AF", "LDH A, [C]", "DI", " - ", "PUSH AF", "OR A, n8", "RST $30", "LD HL, SP + e8", "LD SP, HL", "LD A, [a16]", "EI", " - ", " - ", "CP A, n8", "RST $38"],
         ]
 
-        function disassemble (byte) {
-          const lo = (byte & 0b00001111);
-          const hi = (byte & 0b11110000) >> 4;
+        const prefixDisassemblyLookup = [
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+          ["BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB", "BOB"],
+        ]
 
-          return disassemblyLookup[hi][lo];
+        function disassemble (byte) {
+          let lo = (byte & 0b00001111);
+          let hi = (byte & 0b11110000) >> 4;
+
+          if (byte == 0xCB) {
+            const nextByte = viewRAM(getPC(CPU) + 1);
+            lo = (nextByte & 0b00001111);
+            hi = (nextByte & 0b11110000) >> 4;
+
+            return prefixDisassemblyLookup[hi][lo];
+          } else {
+            return disassemblyLookup[hi][lo];
+          }
         }
 
         function getPC (cpu) {
