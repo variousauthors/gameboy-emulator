@@ -325,6 +325,11 @@ __attribute__((export_name("get_memory"))) uint8_t *get_memory(void) {
 }
 
 // export framebuffer address so JS can read it
+__attribute__((export_name("get_RAM"))) uint8_t *get_RAM(void) {
+  return cpu.boot ? Memory : BootROM;
+}
+
+// export framebuffer address so JS can read it
 __attribute__((export_name("get_registers"))) Registers *get_registers(void) {
   return &Regs;
 }
@@ -390,9 +395,9 @@ __attribute__((export_name("boot"))) void boot(void) {
   Regs.de = 0xFFFF;
   Regs.hl = 0xFFFF;
   Regs.sp = 0xFFFB;
-  Regs.pc = 0x0100;
+  Regs.pc = 0x0000;
 
-  cpu.boot = 1;
+  cpu.boot = 0;
 
   /*
   program:
@@ -496,9 +501,7 @@ __attribute__((export_name("next_instruction"))) void next_instruction(void) {
   nextByte = get_nextByte();
   nextWord = get_nextWord();
 
-  print(Regs.pc);
   int byte = nextByte();
-  print(byte);
 
   int lo = (byte & 0b00001111);
   int hi = (byte & 0b11110000) >> 4;

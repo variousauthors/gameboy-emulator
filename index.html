@@ -78,6 +78,7 @@
           memory,
           get_width,
           get_memory,
+          get_RAM, // might be boot rom
           get_registers,
           get_height,
           get_framebuffer,
@@ -88,6 +89,13 @@
 
         boot();
 
+        function viewRAM (address) {
+          const ramPtr = get_RAM();
+          const _RAM = new Uint8ClampedArray(memory.buffer, ramPtr, 64 * 1024);
+
+          return _RAM[address];
+        }
+
         const memoryPtr = get_memory();
         const registersPtr = get_registers();
 
@@ -96,12 +104,12 @@
         const fbPtr = get_framebuffer();
         const fbSize = width * height * 4;
         const heapU8 = new Uint8ClampedArray(memory.buffer, fbPtr, fbSize);
-        const RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 64 * 1024);
         const CPU = new Uint8ClampedArray(memory.buffer, registersPtr, 12);
 
         const response = await fetch("ark.gb");
         const fileData = new Uint8Array(await response.arrayBuffer());
-        RAM.set(fileData.subarray(0, 32 * 1024));
+        const _RAM = new Uint8ClampedArray(memory.buffer, memoryPtr, 64 * 1024);
+        _RAM.set(fileData.subarray(0, 32 * 1024));
 
         const disassemblyLookup = [
           ["NOP", "LD BC, n16", "LD [BC], A", "INC BC", "INC B", "DEC B", "LD B, n8", "RLCA", "LD [a16], SP", "ADD HL, BC", "LD A, [BC]", "DEC BC", "INC C", "DEC C", "LD C, n8", "RRCA"],
@@ -137,7 +145,7 @@
           return (CPU[7] << 8) | CPU[6];
         }
 
-        console.log(RAM);
+        console.log(_RAM);
         console.log(CPU);
 
         const canvas = document.getElementById("canvas");
@@ -152,10 +160,10 @@
         }
 
         let nextInstruction = document.querySelector("#next-instruction");
-        nextInstruction.textContent = disassemble(RAM[getPC(CPU)]);
+        nextInstruction.textContent = disassemble(viewRAM(getPC(CPU)));
 
         function updateNextInstruction () {
-          nextInstruction.textContent = disassemble(RAM[getPC(CPU)]);
+          nextInstruction.textContent = disassemble(viewRAM([getPC(CPU)]));
         }
 
         let followPC = false;
@@ -237,7 +245,7 @@
 
             for (let x = 0; x < 16; x++) {
               memDivs[y * 17 + x + 1].style.backgroundColor = (y * 16 + x + baseAddress === targetAddress) ? "yellow" : "white";
-              memDivs[y * 17 + x + 1].textContent = toHex(RAM[y * 16 + x + baseAddress], 2);
+              memDivs[y * 17 + x + 1].textContent = toHex(viewRAM(y * 16 + x + baseAddress), 2);
             }
           }
         }
