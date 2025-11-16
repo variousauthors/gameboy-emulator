@@ -358,6 +358,44 @@ void AR08(int byte0) {
   }
 }
 
+#define BIT 1
+#define RES 2
+#define SET 3
+
+// group 1 of the prefix table
+void CB01(int byte0) {}
+
+// groups 2 - 3 of the prefix table
+// BIT, SET, RES
+void CB02(int byte0) {
+  // noop
+  uint8_t operation = (byte0 & 0x11000000) >> 6;
+  uint8_t bitIndex = (byte0 & 0x00111000) >> 3;
+  uint8_t operand = (byte0 & 0x00000111);
+
+  switch (operation) {
+  case BIT: {
+    uint8_t bit = (*r8[operand]) >> bitIndex;
+
+    bit ? CLEAR_FLAG(Z_FLAG) : SET_FLAG(Z_FLAG);
+    CLEAR_FLAG(N_FLAG);
+    SET_FLAG(H_FLAG);
+    break;
+  }
+  case RES: {
+    *r8[operand] &= ~(1 << bitIndex);
+    break;
+  }
+  case SET: {
+    *r8[operand] |= (1 << bitIndex);
+    break;
+  }
+
+  default:
+    break;
+  }
+}
+
 // clang-format off
 void (*prefixOpTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
@@ -365,18 +403,18 @@ void (*prefixOpTable[16][16])(int byte0) = {
 /* 1x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* 2x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
 /* 3x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 4x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 5x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 6x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 7x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 8x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 9x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Ax */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Bx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Cx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Ex */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
+/* 4x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* 5x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* 6x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* 7x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* 8x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* 9x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* Ax */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* Bx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* Cx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* Fx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* Ex */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* Fx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
 };
 // clang-format on
 
