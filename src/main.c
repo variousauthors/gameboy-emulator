@@ -308,14 +308,55 @@ void LDH_(int byte0) {
 #define _OR 6
 #define _CP 7
 
+// immediate arithmetic
+void ARIM(int byte0) {
+  uint8_t operator = (byte0 & 0b00111000) >> 3;
+  uint8_t operand = nextByte();
+
+  switch (operator) {
+  case ADD: {
+    break;
+  }
+  case ADC: {
+    break;
+  }
+  case SUB: {
+    break;
+  }
+  case SBC: {
+    break;
+  }
+  case AND: {
+    break;
+  }
+  case XOR: {
+    uint8_t result = Regs.a ^ operand;
+    Regs.a = result;
+
+    CLEAR_FLAG(N_FLAG);
+    result ? SET_FLAG(Z_FLAG) : CLEAR_FLAG(Z_FLAG);
+    break;
+  }
+  case _OR: {
+    break;
+  }
+  case _CP: {
+    uint8_t result = Regs.a - operand;
+
+    SET_FLAG(N_FLAG);
+    result ? CLEAR_FLAG(Z_FLAG) : SET_FLAG(Z_FLAG);
+    // @TODO check 8-bit carry
+    // @TODO check 4-bit carry
+
+    break;
+  }
+  }
+}
+
 // 8-bit arithmetic
 void AR08(int byte0) {
-  print(98);
-  print(byte0);
   uint8_t operator = (byte0 & 0b00111000) >> 3;
   uint8_t operand = (byte0 & 0b00000111);
-  print(operator);
-  print(operand);
 
   switch (operator) {
   case ADD: {
@@ -341,7 +382,6 @@ void AR08(int byte0) {
     break;
   }
   case XOR: {
-    print(99);
     uint8_t result = Regs.a ^ *r8[operand];
     Regs.a = result;
 
@@ -443,10 +483,10 @@ void (*opTable[16][16])(int byte0) = {
 /* 9x */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
 /* Ax */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
 /* Bx */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
-/* Cx */ {NOOP, NOOP, NOOP, JP16, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, PREF, NOOP, NOOP, NOOP, NOOP},
-/* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Ex */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* Fx */ {NOOP, NOOP, NOOP, _DI_, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
+/* Cx */ {NOOP, NOOP, NOOP, JP16, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, PREF, NOOP, NOOP, ARIM, NOOP},
+/* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP},
+/* Ex */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP},
+/* Fx */ {NOOP, NOOP, NOOP, _DI_, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP},
 };
 // clang-format on
 
