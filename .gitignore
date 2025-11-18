@@ -1,3 +1,7 @@
 .vscode/
+artifacts/
+ark.gb
 main.wasm
+main
+test
 node_modules/

@@ -1,6 +1,7 @@
 // main.c
 #include "boot-rom.c"
 #include "boot-rom.h"
+#include "hardware.h"
 #include <stdint.h>
 
 #define WIDTH 160
@@ -9,54 +10,8 @@
 __attribute__((import_module("env"), import_name("print"))) extern void
 print(int x);
 
-typedef struct CPU {
-  unsigned halt : 1;
-  unsigned boot : 1;
-} CPU;
-
-typedef struct Registers {
-  union {
-    struct {
-      uint8_t f; // lo bits
-      uint8_t a; // hi bits
-    };
-    uint16_t af;
-  };
-  union {
-    struct {
-      uint8_t c; // lo bits
-      uint8_t b; // hi bits
-    };
-    uint16_t bc;
-  };
-  union {
-    struct {
-      uint8_t e; // lo bits
-      uint8_t d; // hi bits
-    };
-    uint16_t de;
-  };
-  union {
-    struct {
-      uint8_t l; // lo bits
-      uint8_t h; // hi bits
-    };
-    uint16_t hl;
-  };
-
-  uint16_t sp;
-  uint16_t pc;
-
-  // stuff we use
-  unsigned halt : 1;
-} Registers;
-
 // framebuffer in linear memory
 uint32_t framebuffer[WIDTH * HEIGHT];
-
-uint8_t Memory[0x10000];
-Registers Regs = {0};
-CPU cpu = {0};
 
 uint8_t (*nextByte)(void);
 uint16_t (*nextWord)(void);
@@ -386,7 +341,7 @@ void AR08(int byte0) {
     Regs.a = result;
 
     CLEAR_FLAG(N_FLAG);
-    result ? SET_FLAG(Z_FLAG) : CLEAR_FLAG(Z_FLAG);
+    result ? CLEAR_FLAG(Z_FLAG) : SET_FLAG(Z_FLAG);
     break;
   }
   case _OR: {
@@ -409,9 +364,9 @@ void CB01(int byte0) {}
 // BIT, SET, RES
 void CB02(int byte0) {
   // noop
-  uint8_t operation = (byte0 & 0x11000000) >> 6;
-  uint8_t bitIndex = (byte0 & 0x00111000) >> 3;
-  uint8_t operand = (byte0 & 0x00000111);
+  uint8_t operation = (byte0 & 0b11000000) >> 6;
+  uint8_t bitIndex = (byte0 & 0b00111000) >> 3;
+  uint8_t operand = (byte0 & 0b00000111);
 
   switch (operation) {
   case BIT: {
@@ -567,11 +522,11 @@ void draw() {
 
 // compute the next frame in-place
 __attribute__((export_name("boot"))) void boot(void) {
-  Regs.af = 0xFFFF;
-  Regs.bc = 0xFFFF;
-  Regs.de = 0xFFFF;
-  Regs.hl = 0xFFFF;
-  Regs.sp = 0xFFFB;
+  Regs.af = 0x0000;
+  Regs.bc = 0x0000;
+  Regs.de = 0x0000;
+  Regs.hl = 0x0000;
+  Regs.sp = 0x0000;
   Regs.pc = 0x0000;
 
   cpu.boot = 0;
