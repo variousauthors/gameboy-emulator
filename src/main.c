@@ -1,6 +1,7 @@
 // main.c
 #include "boot-rom.c"
 #include "boot-rom.h"
+#include "hardware.c"
 #include "hardware.h"
 #include <stdint.h>
 
@@ -15,12 +16,24 @@ uint32_t framebuffer[WIDTH * HEIGHT];
 
 uint8_t (*nextByte)(void);
 uint16_t (*nextWord)(void);
+uint8_t (*getByte)(uint16_t address);
+uint8_t (*getWord)(uint16_t address);
 
 uint8_t nextByteBOOT() { return BootROM[Regs.pc++]; }
 uint16_t nextWordBOOT() { return nextByteBOOT() | (nextByteBOOT() << 8); }
 
 uint8_t nextByteROM() { return Memory[Regs.pc++]; }
 uint16_t nextWordROM() { return nextByteROM() | (nextByteROM() << 8); }
+
+uint8_t getByteROM(uint16_t address) { return Memory[address]; }
+uint16_t getWordROM(uint16_t address) {
+  return Memory[address] | (Memory[address + 1] << 8);
+}
+
+uint8_t getByteBOOT(uint16_t address) { return BootROM[address]; }
+uint16_t getWordBOOT(uint16_t address) {
+  return BootROM[address] | (BootROM[address + 1] << 8);
+}
 
 // a simple animation counter
 static unsigned frame = 0;
@@ -480,7 +493,7 @@ __attribute__((export_name("get_height"))) int get_height(void) {
 #define VRAM_MAP_DATA_9800 0x9800
 #define VRAM_MAP_DATA_SIZE 0x400
 
-#define BIT(byte, n) (((byte) >> (n)) & 1)
+#define GET_BIT(byte, n) (((byte) >> (n)) & 1)
 
 uint32_t GRAYS[4] = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF444444, 0xFF000000};
 
@@ -503,7 +516,8 @@ void draw() {
       uint8_t highByte = Memory[VRAM_TILE_DATA_BLOCK_2 + tileIndex + py + 1];
 
       for (int i = 0; i < 8; i++) {
-        uint8_t index = (BIT(lowByte, 7 - i) << 1) | (BIT(highByte, 7 - i));
+        uint8_t index =
+            (GET_BIT(lowByte, 7 - i) << 1) | (GET_BIT(highByte, 7 - i));
         uint32_t grey = GRAYS[index];
         // push 8 pixels
         framebuffer[y * 160 + x * 8 + i] = grey;
@@ -622,6 +636,14 @@ uint8_t (*get_nextByte(void))(void) {
 
 uint16_t (*get_nextWord(void))(void) {
   return cpu.boot ? nextWordROM : nextWordBOOT;
+}
+
+uint8_t (*get_Byte())(uint16_t address) {
+  return cpu.boot ? getByteROM : getByteBOOT;
+}
+
+uint16_t (*get_Word())(uint16_t address) {
+  return cpu.boot ? getWordROM : getWordBOOT;
 }
 
 __attribute__((export_name("next_instruction"))) void next_instruction(void) {
