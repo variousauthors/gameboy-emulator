@@ -1,6 +1,8 @@
 #include "log.h"
 #include "main.c"
 #include "main.h"
+#include "tests/boot-rom-stream.c"
+#include "tests/boot-rom-stream.h"
 #include <stdio.h>
 
 #define TESTS_COUNT 7
@@ -40,52 +42,6 @@ uint8_t (*nextByte)(void);
 uint16_t (*nextWord)(void);
 uint8_t (*getByte)(uint16_t address);
 uint8_t (*getWord)(uint16_t address);
-
-// af, bc, de, hl, sp, pc
-Registers TESTS[TESTS_COUNT] = {
-    {.af = 0x0000, // boot
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x0000,
-     .sp = 0x0000,
-     .pc = 0x0000},
-    {.af = 0x0000, // ld sp, 0xFFFE
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x0000,
-     .sp = 0xFFFE,
-     .pc = 0x0003},
-    {.af = 0x0080, // xor a, a
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x0000,
-     .sp = 0xFFFE,
-     .pc = 0x0004},
-    {.af = 0x0080, // ld [hl], 0x9FFF
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x9FFF,
-     .sp = 0xFFFE,
-     .pc = 0x0007},
-    {.af = 0x0080, // ld[hl-], a
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x9FFE,
-     .sp = 0xFFFE,
-     .pc = 0x0008},
-    {.af = 0x0020, // bit 7, h (prefix)
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x9FFE,
-     .sp = 0xFFFE,
-     .pc = 0x000A},
-    {.af = 0x0020, // jr nz, n8
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x9FFE,
-     .sp = 0xFFFE,
-     .pc = 0x0007},
-};
 
 int runTest(Registers regs) {
   return regs.af == Regs.af && regs.bc == Regs.bc && regs.de == Regs.de &&
