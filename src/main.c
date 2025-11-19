@@ -3,13 +3,15 @@
 #include "boot-rom.h"
 #include "hardware.c"
 #include "hardware.h"
+#include "log.c"
+#include "log.h"
 #include <stdint.h>
 
 #define WIDTH 160
 #define HEIGHT 144
 
 __attribute__((import_module("env"), import_name("print"))) extern void
-print(int x);
+print(enum LOG_CODES code);
 
 // framebuffer in linear memory
 uint32_t framebuffer[WIDTH * HEIGHT];
@@ -38,7 +40,10 @@ uint16_t getWordBOOT(uint16_t address) {
 // a simple animation counter
 static unsigned frame = 0;
 
-void NOOP(int byte0) { return; }
+void NOOP(int byte0) {
+  print(LC_NOOP);
+  return;
+}
 
 typedef struct Instruction {
   // the first byte
@@ -240,9 +245,9 @@ void JR08(int byte0) {
     return;
   }
 
-  uint8_t dest = nextByte();
+  int8_t dest = nextByte();
 
-  Regs.pc = dest;
+  Regs.pc += dest;
 }
 
 void JP16(int byte0) {

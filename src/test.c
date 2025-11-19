@@ -1,3 +1,4 @@
+#include "log.h"
 #include "main.c"
 #include "main.h"
 #include <stdio.h>
@@ -25,7 +26,15 @@ char DISASSEMBLY_LOOKUP[16][16][16] = {
 };
 // clang-format on
 
-void print(int message) { printf("%04X\n", message); }
+void print(enum LOG_CODES code) {
+  const char *message = toMessage(code);
+
+  if (message) {
+    printf("%s\n", message);
+  } else {
+    printf("byte %04x\n", (uint8_t)code);
+  }
+}
 
 uint8_t (*nextByte)(void);
 uint16_t (*nextWord)(void);
