@@ -41,9 +41,9 @@ uint16_t (*nextWord)(void);
 uint8_t (*getByte)(uint16_t address);
 uint8_t (*getWord)(uint16_t address);
 
-int runTest(Registers regs) {
-  return regs.af == Regs.af && regs.bc == Regs.bc && regs.de == Regs.de &&
-         regs.hl == Regs.hl && regs.sp == Regs.sp && regs.pc == Regs.pc;
+int assertEqual(Registers a, Registers b) {
+  return a.af == b.af && a.bc == b.bc && a.de == b.de && a.hl == b.hl &&
+         a.sp == b.sp && a.pc == b.pc;
 }
 
 void applyDiff(Registers *regs, RegisterDiff diff) {
@@ -56,31 +56,57 @@ void applyDiff(Registers *regs, RegisterDiff diff) {
 }
 
 int runTests() {
-  int i = 1;
+  int i = 0;
   int fail = 0;
 
   Registers regs = {0};
 
-  while (i < TESTS_COUNT) {
-    applyDiff(&regs, TESTS_DIFF[i]);
+  while (i < TEST_GROUP_COUNT) {
+    int j = 0;
 
-    // store the PC before we run, for debugging
-    getByte = get_Byte();
-    uint16_t address = Regs.pc;
+    while (j < TEST_GROUPS[i].rep) {
+      int k = 0;
 
-    next_instruction();
+      while (k < TEST_GROUPS[i].length) {
+        applyDiff(&regs, TEST_GROUPS[i].diff[k]);
 
-    if (!runTest(regs)) {
-      uint8_t opcode = getByte(address);
-      int lo = (opcode & 0b00001111);
-      int hi = (opcode & 0b11110000) >> 4;
+        // store the PC before we run, for debugging
+        getByte = get_Byte();
+        uint16_t address = Regs.pc;
 
-      printf("fail test %d\n", i);
-      printf("  address: %02X\n", address);
-      printf("  opcode: %02X\n", opcode);
-      printf("  instruction: %s\n", DISASSEMBLY_LOOKUP[hi][lo]);
-      printf("  expected %04X %04X %04X %04X %04X %04X\n", regs.af, regs.bc,
-             regs.de, regs.hl, regs.sp, regs.pc);
+        next_instruction();
+
+        if (!assertEqual(regs, Regs)) {
+          uint8_t opcode = getByte(address);
+          int lo = (opcode & 0b00001111);
+          int hi = (opcode & 0b11110000) >> 4;
+
+          printf("failure in test group %d\n", i);
+          printf("failing test %d\n", k);
+          printf("during rep %d\n", j);
+          printf("  address: %02X\n", address);
+          printf("  opcode: %02X\n", opcode);
+          printf("  instruction: %s\n", DISASSEMBLY_LOOKUP[hi][lo]);
+          printf("  expected %04X %04X %04X %04X %04X %04X\n", regs.af, regs.bc,
+                 regs.de, regs.hl, regs.sp, regs.pc);
+          printf("  received %04X %04X %04X %04X %04X %04X\n", Regs.af, Regs.bc,
+                 Regs.de, Regs.hl, Regs.sp, Regs.pc);
+          fail = 1;
+          break;
+        }
+        k++;
+      }
+      j++;
+    }
+
+    // finally after each group, assert we
+    // are in the expected CPU state after the group
+    if (!fail && !assertEqual(TEST_GROUPS[i].expected, Regs)) {
+      Registers expected = TEST_GROUPS[i].expected;
+
+      printf("failed sanity check for test group %d\n", i);
+      printf("  expected %04X %04X %04X %04X %04X %04X\n", expected.af,
+             expected.bc, expected.de, expected.hl, expected.sp, expected.pc);
       printf("  received %04X %04X %04X %04X %04X %04X\n", Regs.af, Regs.bc,
              Regs.de, Regs.hl, Regs.sp, Regs.pc);
       fail = 1;
@@ -91,7 +117,7 @@ int runTests() {
   }
 
   if (fail) {
-    printf("passed %d tests before failing\n", i);
+    printf("passed %d test groups before failing\n", i - 2);
   } else {
     printf("all tests passing");
   }

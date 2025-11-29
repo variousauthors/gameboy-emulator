@@ -241,11 +241,11 @@ uint8_t cond(uint8_t value) {
 }
 
 void JR08(int byte0) {
+  int8_t dest = nextByte();
+
   if ((byte0 & 0b00100000) && !cond((byte0 & 0b00011000) >> 3)) {
     return;
   }
-
-  int8_t dest = nextByte();
 
   Regs.pc += dest;
 }

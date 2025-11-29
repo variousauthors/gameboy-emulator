@@ -4,6 +4,7 @@
 #include "../hardware.h"
 
 #define TESTS_COUNT 7
+#define TEST_GROUP_COUNT 4
 
 // needs to be able to encode +/- 0xFFFF
 // so fields are signed 32 bit, which is a little
@@ -16,6 +17,13 @@ typedef struct RegisterDiff {
   int32_t sp;
   int32_t pc;
 } RegisterDiff;
+
+typedef struct RegisterDiffGroup {
+  int rep; // how many times to apply this test group
+  int length;
+  Registers expected; // an assertion to run at the end of a group
+  RegisterDiff diff[256];
+} RegisterDiffGroup;
 
 // af, bc, de, hl, sp, pc
 extern Registers TESTS[];
