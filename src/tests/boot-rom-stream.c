@@ -1,6 +1,49 @@
 
 #include "boot-rom-stream.h"
 
+RegisterDiff TESTS_DIFF[] = {{.af = 0x0000, // boot
+                              .bc = 0x0000,
+                              .de = 0x0000,
+                              .hl = 0x0000,
+                              .sp = 0x0000,
+                              .pc = 0x0000},
+                             {.af = 0x0000, // ld sp, 0xFFFE
+                              .bc = 0x0000,
+                              .de = 0x0000,
+                              .hl = 0x0000,
+                              .sp = 0xFFFE,  // + 0xFFFE
+                              .pc = 0x0003}, // + 3
+                             {.af = 0x0080,  // xor a, a
+                              .bc = 0x0000,
+                              .de = 0x0000,
+                              .hl = 0x0000,
+                              .sp = 0x0000,
+                              .pc = 0x0001},
+                             {.af = 0x0000, // ld [hl], 0x9FFF
+                              .bc = 0x0000,
+                              .de = 0x0000,
+                              .hl = 0x9FFF,
+                              .sp = 0x0000,
+                              .pc = 0x0003},
+                             {.af = 0x0000, // ld[hl-], a
+                              .bc = 0x0000,
+                              .de = 0x0000,
+                              .hl = -0x0001,
+                              .sp = 0x0000,
+                              .pc = 0x0001},
+                             {.af = -0x0060, // bit 7, h (prefix)
+                              .bc = 0x0000,
+                              .de = 0x0000,
+                              .hl = 0x0000,
+                              .sp = 0x0000,
+                              .pc = 0x0002},
+                             {.af = 0x0000, // jr nz, n8
+                              .bc = 0x0000,
+                              .de = 0x0000,
+                              .hl = 0x0000,
+                              .sp = 0x0000,
+                              .pc = -0x0003}};
+
 // af, bc, de, hl, sp, pc
 Registers TESTS[] = {
     {.af = 0x0000, // boot

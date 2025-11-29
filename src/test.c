@@ -5,8 +5,6 @@
 #include "tests/boot-rom-stream.h"
 #include <stdio.h>
 
-#define TESTS_COUNT 7
-
 // clang-format off
 char DISASSEMBLY_LOOKUP[16][16][16] = {
   {"NOP\0", "LD BC, n16\0", "LD [BC], A\0", "INC BC\0", "INC B\0", "DEC B\0", "LD B, n8\0", "RLCA\0", "LD [a16], SP\0", "ADD HL, BC\0", "LD A, [BC]\0", "DEC BC\0", "INC C\0", "DEC C\0", "LD C, n8\0", "RRCA\0"},
@@ -48,12 +46,23 @@ int runTest(Registers regs) {
          regs.hl == Regs.hl && regs.sp == Regs.sp && regs.pc == Regs.pc;
 }
 
+void applyDiff(Registers *regs, RegisterDiff diff) {
+  regs->af += diff.af;
+  regs->bc += diff.bc;
+  regs->de += diff.de;
+  regs->hl += diff.hl;
+  regs->pc += diff.pc;
+  regs->sp += diff.sp;
+}
+
 int runTests() {
   int i = 1;
   int fail = 0;
 
+  Registers regs = {0};
+
   while (i < TESTS_COUNT) {
-    Registers regs = TESTS[i];
+    applyDiff(&regs, TESTS_DIFF[i]);
 
     // store the PC before we run, for debugging
     getByte = get_Byte();
