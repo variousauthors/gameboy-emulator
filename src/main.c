@@ -409,6 +409,22 @@ void CB02(int byte0) {
   }
 }
 
+void LDH3(int byte0) {
+  uint8_t type = byte0 & 0b00001111;
+
+  uint8_t c = type == 0b0010 ? Regs.c + 0xFF00 : 0;
+  uint8_t imm16 = type == 0b1010 ? nextWord() : 0;
+  uint8_t imm8 = type == 0b0000 ? nextByte() : 0;
+
+  if (byte0 & 0b00010000) {
+    // dest is a
+    Regs.a = Memory[c + imm16 + imm8];
+  } else {
+    // source is a
+    Memory[c + imm16 + imm8] = Regs.a;
+  }
+}
+
 // clang-format off
 void (*prefixOpTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
@@ -426,8 +442,8 @@ void (*prefixOpTable[16][16])(int byte0) = {
 /* Bx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
 /* Cx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
 /* Fx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* Ex */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* Fx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* Ex */ {LDH3, CB02, LDH3, CB02, CB02, CB02, CB02, CB02, CB02, CB02, LDH3, CB02, CB02, CB02, CB02, CB02},
+/* Fx */ {LDH3, CB02, LDH3, CB02, CB02, CB02, CB02, CB02, CB02, CB02, LDH3, CB02, CB02, CB02, CB02, CB02},
 };
 // clang-format on
 

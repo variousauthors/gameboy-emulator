@@ -1,6 +1,6 @@
 #include "log.h"
 
-const char *LM_NOOP = "NOOP";
+const char *LM_NOOP = "UNIMPLEMENTED";
 
 const char *toMessage(enum LOG_CODES code) {
   switch (code) {
