@@ -14,6 +14,11 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
                 .sp = 0xFFFE,
                 .pc = 0x0007,
             },
+        .state =
+            {
+                0x0000,
+                0x0000,
+            },
         .diff = {{.af = 0x0000, // ld sp, 0xFFFE
                   .bc = 0x0000,
                   .de = 0x0000,
@@ -44,6 +49,11 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
              .sp = 0xFFFE,
              .pc = 0x0007,
          },
+     .state =
+         {
+             0x0000,
+             0x0000,
+         },
      .diff = {{.af = 0x0000, // ld[hl-], a
                .bc = 0x0000,
                .de = 0x0000,
@@ -72,6 +82,11 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
              .hl = 0x8000,
              .sp = 0xFFFE,
              .pc = 0x0007,
+         },
+     .state =
+         {
+             0x0000,
+             0x0000,
          },
      .diff = {{.af = 0x0000, // ld[hl-], a
                .bc = 0x0000,
@@ -102,6 +117,11 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
              .sp = 0xFFFE,
              .pc = 0x000C,
          },
+     .state =
+         {
+             0x0000,
+             0x0000,
+         },
      .diff = {{.af = 0x0000, // ld [hl-], a
                .bc = 0x0000,
                .de = 0x0000,
@@ -130,6 +150,11 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
              .hl = 0xFF25,
              .sp = 0xFFFE,
              .pc = 0x0015,
+         },
+     .state =
+         {
+             0xFF11,
+             0x0080,
          },
      .diff = {
          {.af = 0x0000, // ld hl, n16

@@ -412,9 +412,9 @@ void CB02(int byte0) {
 void LDH3(int byte0) {
   uint8_t type = byte0 & 0b00001111;
 
-  uint8_t c = type == 0b0010 ? Regs.c + 0xFF00 : 0;
-  uint8_t imm16 = type == 0b1010 ? nextWord() : 0;
-  uint8_t imm8 = type == 0b0000 ? nextByte() : 0;
+  uint16_t c = type == 0b0010 ? Regs.c + 0xFF00 : 0;
+  uint16_t imm16 = type == 0b1010 ? nextWord() : 0;
+  uint16_t imm8 = type == 0b0000 ? nextByte() : 0;
 
   if (byte0 & 0b00010000) {
     // dest is a
@@ -442,8 +442,8 @@ void (*prefixOpTable[16][16])(int byte0) = {
 /* Bx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
 /* Cx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
 /* Fx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* Ex */ {LDH3, CB02, LDH3, CB02, CB02, CB02, CB02, CB02, CB02, CB02, LDH3, CB02, CB02, CB02, CB02, CB02},
-/* Fx */ {LDH3, CB02, LDH3, CB02, CB02, CB02, CB02, CB02, CB02, CB02, LDH3, CB02, CB02, CB02, CB02, CB02},
+/* Ex */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* Fx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
 };
 // clang-format on
 
@@ -474,8 +474,8 @@ void (*opTable[16][16])(int byte0) = {
 /* Bx */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
 /* Cx */ {NOOP, NOOP, NOOP, JP16, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, PREF, NOOP, NOOP, ARIM, NOOP},
 /* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP},
-/* Ex */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP},
-/* Fx */ {NOOP, NOOP, NOOP, _DI_, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP},
+/* Ex */ {LDH3, NOOP, LDH3, NOOP, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, LDH3, NOOP, NOOP, NOOP, ARIM, NOOP},
+/* Fx */ {LDH3, NOOP, LDH3, _DI_, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, LDH3, NOOP, NOOP, NOOP, ARIM, NOOP},
 };
 // clang-format on
 

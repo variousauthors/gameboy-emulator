@@ -22,6 +22,7 @@ typedef struct RegisterDiffGroup {
   int rep; // how many times to apply this test group
   int length;
   Registers expected; // an assertion to run at the end of a group
+  uint16_t state[16]; // an array of pairs of (address, value) to compare
   RegisterDiff diff[256];
 } RegisterDiffGroup;
 

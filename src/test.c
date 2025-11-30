@@ -32,7 +32,7 @@ void print(enum LOG_CODES code) {
   if (message) {
     printf("%s\n", message);
   } else {
-    printf("byte %04x\n", (uint8_t)code);
+    printf("byte %04x\n", (uint16_t)code);
   }
 }
 
@@ -44,6 +44,22 @@ uint8_t (*getWord)(uint16_t address);
 int assertEqual(Registers a, Registers b) {
   return a.af == b.af && a.bc == b.bc && a.de == b.de && a.hl == b.hl &&
          a.sp == b.sp && a.pc == b.pc;
+}
+
+int assertState(uint16_t state[16]) {
+  int fail = 1;
+  uint16_t address;
+  uint8_t i = 0;
+
+  while ((address = state[i * 2])) {
+    uint16_t value = state[i * 2 + 1];
+
+    fail &= Memory[address] == value;
+
+    i++;
+  }
+
+  return fail;
 }
 
 void applyDiff(Registers *regs, RegisterDiff diff) {
@@ -101,16 +117,26 @@ int runTests() {
 
     // finally after each group, assert we
     // are in the expected CPU state after the group
-    if (!fail && !assertEqual(TEST_GROUPS[i].expected, Regs)) {
-      Registers expected = TEST_GROUPS[i].expected;
+    if (!fail) {
+      if (!assertEqual(TEST_GROUPS[i].expected, Regs)) {
+        Registers expected = TEST_GROUPS[i].expected;
 
-      printf("failed sanity check for test group %d\n", i);
-      printf("  expected %04X %04X %04X %04X %04X %04X\n", expected.af,
-             expected.bc, expected.de, expected.hl, expected.sp, expected.pc);
-      printf("  received %04X %04X %04X %04X %04X %04X\n", Regs.af, Regs.bc,
-             Regs.de, Regs.hl, Regs.sp, Regs.pc);
-      fail = 1;
-      break;
+        printf("failed sanity check for test group %d\n", i);
+        printf("  expected %04X %04X %04X %04X %04X %04X\n", expected.af,
+               expected.bc, expected.de, expected.hl, expected.sp, expected.pc);
+        printf("  received %04X %04X %04X %04X %04X %04X\n", Regs.af, Regs.bc,
+               Regs.de, Regs.hl, Regs.sp, Regs.pc);
+        fail = 1;
+        break;
+      }
+
+      if (!assertState(TEST_GROUPS[i].state)) {
+        Registers expected = TEST_GROUPS[i].expected;
+
+        printf("failed memory check for test group %d\n", i);
+        fail = 1;
+        break;
+      }
     }
 
     i++;

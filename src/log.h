@@ -1,7 +1,10 @@
 #ifndef LOG_H_INC
 #define LOG_H_INC
 
-enum LOG_CODES { LC_NOOP = 99 };
+enum LOG_CODES {
+  LC_NOOP = 99,
+  LC_ENTER = 98,
+};
 
 extern const char *LM_NOOP;
 
