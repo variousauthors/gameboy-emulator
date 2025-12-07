@@ -46,22 +46,36 @@ int assertEqual(Registers a, Registers b) {
          a.sp == b.sp && a.pc == b.pc;
 }
 
+uint16_t getExpectedAddress(uint16_t state[16], int index) {
+  return state[index * 2];
+}
+
+uint8_t getExpectedValue(uint16_t state[16], int index) {
+  return state[index * 2 + 1];
+}
+
+uint8_t getActualValue(uint16_t state[16], int index) {
+  uint16_t address = state[index * 2];
+
+  return Memory[address];
+}
+
 int assertState(uint16_t state[16]) {
-  int fail = 1;
   uint16_t address;
   uint8_t i = 0;
 
   while ((address = state[i * 2])) {
     uint16_t value = state[i * 2 + 1];
 
-    fail &= Memory[address] == value;
+    if (Memory[address] != value) {
+      return i;
+    }
 
     i++;
   }
 
-  return fail;
+  return -1;
 }
-
 void applyDiff(Registers *regs, RegisterDiff diff) {
   regs->af += diff.af;
   regs->bc += diff.bc;
@@ -130,10 +144,17 @@ int runTests() {
         break;
       }
 
-      if (!assertState(TEST_GROUPS[i].state)) {
-        Registers expected = TEST_GROUPS[i].expected;
+      int failingState = -1;
+
+      if ((failingState = assertState(TEST_GROUPS[i].state)) > 0) {
+        uint8_t expected = getExpectedValue(TEST_GROUPS[i].state, failingState);
+        uint16_t address =
+            getExpectedAddress(TEST_GROUPS[i].state, failingState);
+        uint8_t actual = getActualValue(TEST_GROUPS[i].state, failingState);
 
         printf("failed memory check for test group %d\n", i);
+        printf("expected %04X at %04X but got %04X\n", expected, address,
+               actual);
         fail = 1;
         break;
       }

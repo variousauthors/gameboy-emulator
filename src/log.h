@@ -4,6 +4,7 @@
 enum LOG_CODES {
   LC_NOOP = 99,
   LC_ENTER = 98,
+  LC_EXIT = 97,
 };
 
 extern const char *LM_NOOP;

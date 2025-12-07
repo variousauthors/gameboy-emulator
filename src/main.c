@@ -66,6 +66,15 @@ uint8_t *r8[8] = {
     &Regs.b, &Regs.c, &Regs.d, &Regs.e, &Regs.h, &Regs.l, 0, &Regs.a,
 };
 
+uint8_t *getR8(uint8_t index) {
+  if (index == 6) {
+    // [hl]
+    return &Memory[Regs.hl];
+  } else {
+    return r8[index];
+  }
+}
+
 uint16_t *r16[4] = {
     &Regs.bc,
     &Regs.de,
@@ -149,10 +158,10 @@ void LD08(int byte0) {
   } else {
     // ld X, Y from the 2nd 4 op rows
     // @TODO handle the case where the source is [hl]
-    uint8_t *source = r8[inst.source];
+    uint8_t *source = getR8(inst.source);
 
     // @TODO handle the case where the dest is [hl]
-    uint8_t *dest = r8[inst.dest];
+    uint8_t *dest = getR8(inst.dest);
 
     // execute the instruction
 
@@ -180,7 +189,8 @@ void LD16(int byte0) {
 }
 
 // inc/dec for r16
-void ST16(int byte0) {
+// increment decrement
+void INCF(int byte0) {
   uint16_t *operand = r16[(byte0 & 0b00110000) >> 4];
 
   if (byte0 & 0b00001000) {
@@ -191,7 +201,8 @@ void ST16(int byte0) {
 }
 
 // inc/dec for r8
-void ST08(int byte0) {
+// increment decrement
+void INC8(int byte0) {
   uint8_t *operand = r8[(byte0 & 0b00111000) >> 3];
 
   if (byte0 & 0b00000001) {
@@ -209,6 +220,14 @@ void ST08(int byte0) {
     // set z to 1
     Regs.f |= 0b10000000;
   }
+
+  // sets n to 0
+  Regs.f &= ~0b0100000;
+
+  // @TODO implement h flag
+  // inc - set if overflow from bit 3
+  // dec - set if borrow from bit 4
+  Regs.f &= ~0b0010000;
 }
 
 #define Z_FLAG (0b10000000)
@@ -460,10 +479,10 @@ void PREF(int byte0) {
 // clang-format off
 void (*opTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
-/* 0x */ {NOOP, LD16, LD08, ST16, ST08, ST08, LD08, NOOP, NOOP, NOOP, LD08, ST16, ST08, ST08, LD08, NOOP},
-/* 1x */ {NOOP, LD16, LD08, ST16, ST08, ST08, LD08, NOOP, JR08, NOOP, LD08, ST16, ST08, ST08, LD08, NOOP},
-/* 2x */ {JR08, LD16, LD08, ST16, ST08, ST08, LD08, NOOP, JR08, NOOP, LD08, ST16, ST08, ST08, LD08, NOOP},
-/* 3x */ {JR08, LD16, LD08, ST16, ST08, ST08, LD08, NOOP, JR08, NOOP, LD08, ST16, ST08, ST08, LD08, NOOP},
+/* 0x */ {NOOP, LD16, LD08, INCF, INC8, INC8, LD08, NOOP, NOOP, NOOP, LD08, INCF, INC8, INC8, LD08, NOOP},
+/* 1x */ {NOOP, LD16, LD08, INCF, INC8, INC8, LD08, NOOP, JR08, NOOP, LD08, INCF, INC8, INC8, LD08, NOOP},
+/* 2x */ {JR08, LD16, LD08, INCF, INC8, INC8, LD08, NOOP, JR08, NOOP, LD08, INCF, INC8, INC8, LD08, NOOP},
+/* 3x */ {JR08, LD16, LD08, INCF, INC8, INC8, LD08, NOOP, JR08, NOOP, LD08, INCF, INC8, INC8, LD08, NOOP},
 /* 4x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
 /* 5x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
 /* 6x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},

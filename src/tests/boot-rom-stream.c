@@ -31,7 +31,7 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
                   .hl = 0x0000,
                   .sp = 0x0000,
                   .pc = 0x0001},
-                 {.af = 0x0000, // ld [hl], 0x9FFF
+                 {.af = 0x0000, // ld hl, 0x9FFF
                   .bc = 0x0000,
                   .de = 0x0000,
                   .hl = 0x9FFF,
@@ -51,7 +51,7 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
          },
      .state =
          {
-             0x0000,
+             0x9FFF,
              0x0000,
          },
      .diff = {{.af = 0x0000, // ld[hl-], a
@@ -85,7 +85,7 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
          },
      .state =
          {
-             0x0000,
+             0x8000,
              0x0000,
          },
      .diff = {{.af = 0x0000, // ld[hl-], a
@@ -141,20 +141,26 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
                .sp = 0x0000,
                .pc = 0x0002}}},
     {.rep = 1,
-     .length = 5,
+     .length = 11,
      .expected =
          {
-             .af = 0x80A0,
-             .bc = 0x0011,
+             .af = 0x7700,
+             .bc = 0x0012,
              .de = 0x0000,
-             .hl = 0xFF25,
+             .hl = 0xFF24,
              .sp = 0xFFFE,
-             .pc = 0x0015,
+             .pc = 0x001D,
          },
      .state =
          {
-             0xFF11,
+             0xFF11, // ldh [c], a
              0x0080,
+             0xFF12, // ldh [c], a
+             0x00F3,
+             0xFF25, // ldd [hl], a
+             0x00F3,
+             0xFF24, // ld [hl], a
+             0x0077,
          },
      .diff = {
          {.af = 0x0000, // ld hl, n16
@@ -182,6 +188,42 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
           .sp = 0x0000,
           .pc = 0x0001},
          {.af = 0x0000, // ldh [c], a
+          .bc = 0x0000,
+          .de = 0x0000,
+          .hl = 0x0000,
+          .sp = 0x0000,
+          .pc = 0x0001},
+         {.af = -0x00A0, // inc c
+          .bc = 0x0001,
+          .de = 0x0000,
+          .hl = 0x0000,
+          .sp = 0x0000,
+          .pc = 0x0001},
+         {.af = 0x7300, // ld a, n8
+          .bc = 0x0000,
+          .de = 0x0000,
+          .hl = 0x0000,
+          .sp = 0x0000,
+          .pc = 0x0002},
+         {.af = 0x0000, // ldh [c], a
+          .bc = 0x0000,
+          .de = 0x0000,
+          .hl = 0x0000,
+          .sp = 0x0000,
+          .pc = 0x0001},
+         {.af = 0x0000, // ld [hl-], a
+          .bc = 0x0000,
+          .de = 0x0000,
+          .hl = -0x0001,
+          .sp = 0x0000,
+          .pc = 0x0001},
+         {.af = -0x7C00, // ld a, $77
+          .bc = 0x0000,
+          .de = 0x0000,
+          .hl = 0x0000,
+          .sp = 0x0000,
+          .pc = 0x0002},
+         {.af = 0x0000, // ld [hl], a
           .bc = 0x0000,
           .de = 0x0000,
           .hl = 0x0000,
