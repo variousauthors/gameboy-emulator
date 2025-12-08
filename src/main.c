@@ -433,7 +433,7 @@ void LDH3(int byte0) {
 
   uint16_t c = type == 0b0010 ? Regs.c + 0xFF00 : 0;
   uint16_t imm16 = type == 0b1010 ? nextWord() : 0;
-  uint16_t imm8 = type == 0b0000 ? nextByte() : 0;
+  uint16_t imm8 = type == 0b0000 ? nextByte() + 0xFF00 : 0;
 
   if (byte0 & 0b00010000) {
     // dest is a
