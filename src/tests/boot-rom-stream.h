@@ -26,6 +26,8 @@ typedef struct RegisterDiffGroup {
   RegisterDiff diff[256];
 } RegisterDiffGroup;
 
+void initBootROMStream(uint8_t *memory);
+
 // af, bc, de, hl, sp, pc
 extern Registers TESTS[];
 extern RegisterDiff TESTS_DIFF[];

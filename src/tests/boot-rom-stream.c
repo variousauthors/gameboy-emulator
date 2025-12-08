@@ -1,6 +1,35 @@
 
 #include "boot-rom-stream.h"
 
+/* we need to fake a ROM header for the boot-rom to read */
+uint8_t ENTRY_POINT_ROM[4] = {
+    0x00,
+    0xC3,
+    0x01,
+    0x50,
+};
+
+uint8_t NINTENDO_LOGO_ROM[0x30] = {
+    0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83,
+    0x00, 0x0C, 0x00, 0x0D, 0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E,
+    0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99, 0xBB, 0xBB, 0x67, 0x63,
+    0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E};
+
+// do any init we need for this test
+void initBootROMStream(uint8_t *memory) {
+  int base = 0x0100;
+
+  for (int i = 0; i < 4; i++) {
+    memory[base + i] = ENTRY_POINT_ROM[i];
+  }
+
+  base = 0x0104;
+
+  for (int i = 0; i < 0x30; i++) {
+    memory[base + i] = NINTENDO_LOGO_ROM[i];
+  }
+}
+
 RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
     {
         .rep = 1,
@@ -141,15 +170,15 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
                .sp = 0x0000,
                .pc = 0x0002}}},
     {.rep = 1,
-     .length = 13,
+     .length = 16,
      .expected =
          {
-             .af = 0xFC00,
+             .af = 0xCE00,
              .bc = 0x0012,
-             .de = 0x0000,
-             .hl = 0xFF24,
+             .de = 0x0104,
+             .hl = 0x8010,
              .sp = 0xFFFE,
-             .pc = 0x0021,
+             .pc = 0x0028,
          },
      .state =
          {
@@ -243,6 +272,24 @@ RegisterDiffGroup TEST_GROUPS[TEST_GROUP_COUNT] = {
           .hl = 0x0000,
           .sp = 0x0000,
           .pc = 0x0002},
+         {.af = 0x0000, // ld de, $0104
+          .bc = 0x0000,
+          .de = 0x0104,
+          .hl = 0x0000,
+          .sp = 0x0000,
+          .pc = 0x0003},
+         {.af = 0x0000, // ld h, $8010
+          .bc = 0x0000,
+          .de = 0x0000,
+          .hl = -0x7F14,
+          .sp = 0x0000,
+          .pc = 0x0003},
+         {.af = -0x2E00, // ld a, [de]
+          .bc = 0x0000,
+          .de = 0x0000,
+          .hl = 0x0000,
+          .sp = 0x0000,
+          .pc = 0x0001},
      }}};
 
 RegisterDiff TESTS_DIFF[TESTS_COUNT] = {{.af = 0x0000, // boot

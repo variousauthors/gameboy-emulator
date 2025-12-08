@@ -24,6 +24,7 @@ char DISASSEMBLY_LOOKUP[16][16][16] = {
   {"LDH [a8], A\0", "POP HL\0", "LDH [C], A\0", " - \0", " - \0", "PUSH HL\0", "AND A, n8\0", "RST $20\0", "ADD SP, e8\0", "JP HL\0", "LD [a16], A\0", " - \0", " - \0", " - \0", "XOR A, n8\0", "RST $28\0"},
   {"LDH A, [a8]\0", "POP AF\0", "LDH A, [C]\0", "DI\0", " - \0", "PUSH AF\0", "OR A, n8\0", "RST $30\0", "LD HL, SP + e8\0", "LD SP, HL\0", "LD A, [a16]\0", "EI\0", " - \0", " - \0", "CP A, n8\0", "RST $38\0"},
 };
+
 // clang-format on
 
 void print(enum LOG_CODES code) {
@@ -86,6 +87,7 @@ void applyDiff(Registers *regs, RegisterDiff diff) {
 }
 
 int runTests() {
+  initBootROMStream(Memory);
   int i = 0;
   int fail = 0;
 
