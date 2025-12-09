@@ -476,6 +476,96 @@ void PREF(int byte0) {
   prefixOpTable[hi][lo](byte1);
 }
 
+enum CALL_TYPE {
+  CT_RET_COND = 0,
+  CT_RET_ABS,
+  CT_JP_COND,
+  CT_JP_ABS,
+  CT_CALL_COND,
+  CT_CALL_ABS,
+  CT_RST,
+};
+
+void pushR16(uint16_t *reg) {
+  // push it to the stack and
+  // change sp
+  /*
+    DEC SP
+    LD [SP], HIGH(r16)  ; B, D or H
+    DEC SP
+    LD [SP], LOW(r16)   ; C, E or L
+  */
+  Regs.sp--;
+  Memory[Regs.sp] = (*reg & 0xFF00) >> 8;
+  Regs.sp--;
+  Memory[Regs.sp] = (*reg & 0x00FF);
+}
+
+/** I'm not returning something, we are pushing to the
+ * given register */
+void popR16(uint16_t *reg) {
+  // pop it from the stack and
+  // change sp
+  /*
+    LD LOW(r16), [SP]   ; C, E or L
+    INC SP
+    LD HIGH(r16), [SP]  ; B, D or H
+    INC SP
+  */
+
+  *reg = Memory[Regs.sp];
+  Regs.sp++;
+  *reg = (Memory[Regs.sp] << 8) | *reg;
+  Regs.sp++;
+}
+
+/* call, jp, rst, ret */
+void CALL(int byte0) {
+  uint8_t callType = byte0 & 0b00000111;
+  uint8_t det = (byte0 & 0b00100000) >> 5;
+  uint8_t cond = (byte0 & 0b00011000) >> 3;
+
+  switch (callType) {
+  case CT_RET_ABS: {
+    if (det) {
+      // nonsense, in this case we are doing jp hl
+    } else {
+      // ret abs
+    }
+
+    break;
+  }
+  case CT_JP_COND: {
+    /* code */
+    break;
+  }
+  case CT_JP_ABS: {
+    /* code */
+    break;
+  }
+  case CT_CALL_COND: {
+    // call uses (pc - 1) as the return value
+    // so push this to the stack
+    break;
+  }
+  case CT_CALL_ABS: {
+    // this is going to be off by one
+    // because PC is not pointing to the current
+    // instruction, it is pointing to the next
+    pushR16(&Regs.pc);
+    break;
+  }
+  case CT_RET_COND: {
+    break;
+  }
+  case CT_RST: {
+    break;
+  }
+  default:
+    break;
+  }
+}
+
 // clang-format off
 void (*opTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
@@ -718,6 +808,20 @@ __attribute__((export_name("next_frame"))) void next_frame(void) {
     if (cpu.halt) {
       continue;
     }
+
+    /** @TODO big todo here
+     * I think we need to separate pc++ from nextByte
+     *
+     * It should be like this:
+     *
+     * int byte = getInstruction(); // no change to pc
+     * int nextByte = getNextByte(); // reads the next byte, but no change to pc
+     * int nextWord = getNextWord(); // reads the next word, but no change to pc
+     * commit(3); // or something, advance PC by 3
+     *
+     * later on we could do
+     * commit(3, 4); // 3 bytes, 4 cycles
+     */
 
     int byte = nextByte();
 
