@@ -4,7 +4,7 @@
 #include "../hardware.h"
 
 #define TESTS_COUNT 7
-#define TEST_GROUP_COUNT 5
+#define TEST_GROUP_COUNT 6
 
 // needs to be able to encode +/- 0xFFFF
 // so fields are signed 32 bit, which is a little

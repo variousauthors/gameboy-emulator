@@ -42,6 +42,7 @@ static unsigned frame = 0;
 
 void NOOP(int byte0) {
   print(LC_NOOP);
+  print(byte0);
   return;
 }
 
@@ -75,11 +76,27 @@ uint8_t *getR8(uint8_t index) {
   }
 }
 
+void setR8(uint8_t index, uint8_t value) {
+  if (index == 6) {
+    // [hl]
+    Memory[Regs.hl] = value;
+  } else {
+    *r8[index] = value;
+  }
+}
+
 uint16_t *r16[4] = {
     &Regs.bc,
     &Regs.de,
     &Regs.hl,
     &Regs.sp,
+};
+
+uint16_t *r16stk[4] = {
+    &Regs.bc,
+    &Regs.de,
+    &Regs.hl,
+    &Regs.af,
 };
 
 uint8_t *loadDest[2][4] = {
@@ -394,12 +411,125 @@ void AR08(int byte0) {
 #define RES 2
 #define SET 3
 
+enum SHIFT_OPS {
+  SO_RLC = 0,
+  SO_RRC,
+  SO_RL,
+  SO_RR,
+  SO_SLA,
+  SO_SRA,
+  SO_SWAP,
+  SO_SRL,
+};
+
+enum ERRANT_SHIFT_OPS {
+  ES_RLCA = 0,
+  ES_RRCA,
+  ES_RLA,
+  ES_RRA,
+};
+
+void SHF0(int byte0) {
+  uint8_t operation = (byte0 & 0b00011100) >> 3;
+  uint8_t operand = (byte0 & 0b00000111);
+
+  switch (operation) {
+  case ES_RLCA: {
+    /* code */
+    break;
+  }
+  case ES_RRCA: {
+    /* code */
+    break;
+  }
+  case ES_RLA: {
+    print(byte0);
+    uint8_t reg = *getR8(operand);
+    uint8_t msb = (reg & 0b10000000) >> 7;
+
+    // shift ON the existing carry
+    print(Regs.a);
+    print(reg << 1);
+    print(Regs.af & 0b00010000);
+    uint8_t result = (reg << 1) | ((Regs.af & 0b00010000) >> 4);
+    setR8(operand, result);
+
+    CLEAR_FLAG(Z_FLAG);
+    CLEAR_FLAG(N_FLAG);
+    CLEAR_FLAG(H_FLAG);
+    msb ? SET_FLAG(C_FLAG) : CLEAR_FLAG(C_FLAG);
+
+    break;
+  }
+  case ES_RRA: {
+    /* code */
+    break;
+  }
+  default:
+    break;
+  }
+}
+
 // group 1 of the prefix table
-void CB01(int byte0) {}
+// covers shift and rotate instructions
+// rlc rrc rl rr sla sra swap srl
+void SHF1(int byte0) {
+  uint8_t operation = (byte0 & 0b00011100) >> 3;
+  uint8_t operand = (byte0 & 0b00000111);
+
+  switch (operation) {
+  case SO_RLC: {
+    /* code */
+    break;
+  }
+  case SO_RRC: {
+    /* code */
+    break;
+  }
+  case SO_RL: {
+    uint8_t reg = *getR8(operand);
+    uint8_t msb = (reg & 0b10000000) >> 7;
+
+    // shift ON the existing carry
+    uint8_t result = (reg << 1) | Regs.af & 0b00000001;
+    setR8(operand, result);
+
+    result ? CLEAR_FLAG(Z_FLAG) : SET_FLAG(Z_FLAG);
+    CLEAR_FLAG(N_FLAG);
+    CLEAR_FLAG(H_FLAG);
+    msb ? SET_FLAG(C_FLAG) : CLEAR_FLAG(C_FLAG);
+
+    break;
+  }
+  case SO_RR: {
+    /* code */
+    break;
+  }
+  case SO_SLA: {
+    /* code */
+    break;
+  }
+  case SO_SRA: {
+    /* code */
+    break;
+  }
+  case SO_SWAP: {
+    /* code */
+    break;
+  }
+  case SO_SRL: {
+    /* code */
+    break;
+  }
+
+  default:
+    break;
+  }
+}
 
 // groups 2 - 3 of the prefix table
 // BIT, SET, RES
-void CB02(int byte0) {
+void BITS(int byte0) {
   // noop
   uint8_t operation = (byte0 & 0b11000000) >> 6;
   uint8_t bitIndex = (byte0 & 0b00111000) >> 3;
@@ -447,22 +577,22 @@ void LDH3(int byte0) {
 // clang-format off
 void (*prefixOpTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
-/* 0x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 1x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 2x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 3x */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP},
-/* 4x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* 5x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* 6x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* 7x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* 8x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* 9x */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* Ax */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* Bx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* Cx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* Fx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* Ex */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
-/* Fx */ {CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02, CB02},
+/* 0x */ {SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1},
+/* 1x */ {SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1},
+/* 2x */ {SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1},
+/* 3x */ {SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1, SHF1},
+/* 4x */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* 5x */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* 6x */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* 7x */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* 8x */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* 9x */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* Ax */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* Bx */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* Cx */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* Fx */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* Ex */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
+/* Fx */ {BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS, BITS},
 };
 // clang-format on
 
@@ -549,10 +679,10 @@ void CALL(int byte0) {
     break;
   }
   case CT_CALL_ABS: {
-    // this is going to be off by one
-    // because PC is not pointing to the current
-    // instruction, it is pointing to the next
+    uint16_t dest = nextWord();
     pushR16(&Regs.pc);
+    Regs.pc = dest;
+
     break;
   }
   case CT_RET_COND: {
@@ -566,11 +696,23 @@ void CALL(int byte0) {
   }
 }
 
+void STCK(int byte0) {
+  uint8_t reg = (byte0 & 0b00110000) >> 4;
+
+  if (byte0 & 0b00000100) {
+    // push
+    pushR16(r16stk[reg]);
+  } else {
+    // pop
+    popR16(r16stk[reg]);
+  }
+}
+
 // clang-format off
 void (*opTable[16][16])(int byte0) = {
 /* hi\lo   x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xA    xB    xC    xD    xE    xF */
-/* 0x */ {NOOP, LD16, LD08, INCF, INC8, INC8, LD08, NOOP, NOOP, NOOP, LD08, INCF, INC8, INC8, LD08, NOOP},
-/* 1x */ {NOOP, LD16, LD08, INCF, INC8, INC8, LD08, NOOP, JR08, NOOP, LD08, INCF, INC8, INC8, LD08, NOOP},
+/* 0x */ {NOOP, LD16, LD08, INCF, INC8, INC8, LD08, SHF0, NOOP, NOOP, LD08, INCF, INC8, INC8, LD08, SHF0},
+/* 1x */ {NOOP, LD16, LD08, INCF, INC8, INC8, LD08, SHF0, JR08, NOOP, LD08, INCF, INC8, INC8, LD08, SHF0},
 /* 2x */ {JR08, LD16, LD08, INCF, INC8, INC8, LD08, NOOP, JR08, NOOP, LD08, INCF, INC8, INC8, LD08, NOOP},
 /* 3x */ {JR08, LD16, LD08, INCF, INC8, INC8, LD08, NOOP, JR08, NOOP, LD08, INCF, INC8, INC8, LD08, NOOP},
 /* 4x */ {LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08, LD08},
@@ -581,10 +723,10 @@ void (*opTable[16][16])(int byte0) = {
 /* 9x */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
 /* Ax */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
 /* Bx */ {AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08, AR08},
-/* Cx */ {NOOP, NOOP, NOOP, JP16, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, PREF, NOOP, NOOP, ARIM, NOOP},
-/* Fx */ {NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP},
-/* Ex */ {LDH3, NOOP, LDH3, NOOP, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, LDH3, NOOP, NOOP, NOOP, ARIM, NOOP},
-/* Fx */ {LDH3, NOOP, LDH3, _DI_, NOOP, NOOP, ARIM, NOOP, NOOP, NOOP, LDH3, NOOP, NOOP, NOOP, ARIM, NOOP},
+/* Cx */ {NOOP, STCK, NOOP, JP16, NOOP, STCK, ARIM, NOOP, NOOP, NOOP, NOOP, PREF, NOOP, CALL, ARIM, NOOP},
+/* Fx */ {NOOP, STCK, NOOP, NOOP, NOOP, STCK, ARIM, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, NOOP, ARIM, NOOP},
+/* Ex */ {LDH3, STCK, LDH3, NOOP, NOOP, STCK, ARIM, NOOP, NOOP, NOOP, LDH3, NOOP, NOOP, NOOP, ARIM, NOOP},
+/* Fx */ {LDH3, STCK, LDH3, _DI_, NOOP, STCK, ARIM, NOOP, NOOP, NOOP, LDH3, NOOP, NOOP, NOOP, ARIM, NOOP},
 };
 // clang-format on
 
@@ -808,20 +950,6 @@ __attribute__((export_name("next_frame"))) void next_frame(void) {
     if (cpu.halt) {
       continue;
     }
-
-    /** @TODO big todo here
-     * I think we need to separate pc++ from nextByte
-     *
-     * It should be like this:
-     *
-     * int byte = getInstruction(); // no change to pc
-     * int nextByte = getNextByte(); // reads the next byte, but no change to pc
-     * int nextWord = getNextWord(); // reads the next word, but no change to pc
-     * commit(3); // or something, advance PC by 3
-     *
-     * later on we could do
-     * commit(3, 4); // 3 bytes, 4 cycles
-     */
 
     int byte = nextByte();
 
