@@ -230,6 +230,7 @@ void INC8(int byte0) {
     Regs.f &= ~0b01000000;
   }
 
+  // if operand is zero set the z flag
   if (*operand) {
     // set z to 0
     Regs.f &= ~0b10000000;
