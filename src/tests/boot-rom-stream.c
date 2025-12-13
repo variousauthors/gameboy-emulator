@@ -294,15 +294,15 @@ RegisterDiffGroup
                    .pc = 0x0001},
               }},
          {.rep = 1,
-          .length = 6,
+          .length = 8,
           .expected =
               {
-                  .af = 0xCE10,
-                  .bc = 0x049C,
+                  .af = 0x9D10,
+                  .bc = 0x04CE,
                   .de = 0x0104,
                   .hl = 0x8010,
-                  .sp = 0xFFFA,
-                  .pc = 0x009B,
+                  .sp = 0xFFFC,
+                  .pc = 0x009D,
               },
           .state =
               {
@@ -346,12 +346,24 @@ RegisterDiffGroup
                .hl = 0x0000,
                .sp = 0x0000,
                .pc = 0x0002},
-              {.af = 0x0010, // rla
+              {.af = -0x3100, // rla
                .bc = 0x0000,
                .de = 0x0000,
                .hl = 0x0000,
                .sp = 0x0000,
                .pc = 0x0001},
+              {.af = 0x0000, // pop bc
+               .bc = 0x0032,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0002,
+               .pc = 0x0001},
+              {.af = 0x0010, // rl c
+               .bc = -0x0032,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0002},
           }}};
 
 RegisterDiff TESTS_DIFF[TESTS_COUNT] = {{.af = 0x0000, // boot
