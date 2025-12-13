@@ -487,7 +487,7 @@ void SHF1(int byte0) {
     uint8_t msb = (reg & 0b10000000) >> 7;
 
     // shift ON the existing carry
-    uint8_t result = (reg << 1) | Regs.af & 0b00000001;
+    uint8_t result = (reg << 1) | (Regs.af & 0b00010000) >> 4;
     setR8(operand, result);
 
     result ? CLEAR_FLAG(Z_FLAG) : SET_FLAG(Z_FLAG);

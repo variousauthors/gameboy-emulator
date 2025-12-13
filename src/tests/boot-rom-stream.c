@@ -298,11 +298,11 @@ RegisterDiffGroup
           .expected =
               {
                   .af = 0x9D10,
-                  .bc = 0x04CE,
+                  .bc = 0x049D,
                   .de = 0x0104,
                   .hl = 0x8010,
                   .sp = 0xFFFC,
-                  .pc = 0x009D,
+                  .pc = 0x009F,
               },
           .state =
               {
@@ -358,8 +358,8 @@ RegisterDiffGroup
                .hl = 0x0000,
                .sp = 0x0002,
                .pc = 0x0001},
-              {.af = 0x0010, // rl c
-               .bc = -0x0032,
+              {.af = 0x0000, // rl c
+               .bc = -0x0031,
                .de = 0x0000,
                .hl = 0x0000,
                .sp = 0x0000,
