@@ -100,7 +100,9 @@ int runTests() {
       int k = 0;
 
       while (k < TEST_GROUPS[i].length) {
-        applyDiff(&regs, TEST_GROUPS[i].diff[k]);
+        if (!TEST_GROUPS[i].skip) {
+          applyDiff(&regs, TEST_GROUPS[i].diff[k]);
+        }
 
         // store the PC before we run, for debugging
         getByte = get_Byte();
@@ -108,7 +110,16 @@ int runTests() {
 
         next_instruction();
 
-        if (!assertEqual(regs, Regs)) {
+        if (TEST_GROUPS[i].skip) {
+          regs.af = Regs.af;
+          regs.bc = Regs.bc;
+          regs.de = Regs.de;
+          regs.hl = Regs.hl;
+          regs.sp = Regs.sp;
+          regs.pc = Regs.pc;
+        }
+
+        if (!TEST_GROUPS[i].skip && !assertEqual(regs, Regs)) {
           uint8_t opcode = getByte(address);
           int lo = (opcode & 0b00001111);
           int hi = (opcode & 0b11110000) >> 4;

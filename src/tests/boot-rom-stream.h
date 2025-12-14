@@ -2,9 +2,10 @@
 #define BOOT_ROM_STREAM_H_INC
 
 #include "../hardware.h"
+#include <stdbool.h>
 
 #define TESTS_COUNT 7
-#define TEST_GROUP_COUNT 6
+#define TEST_GROUP_COUNT 8
 
 // needs to be able to encode +/- 0xFFFF
 // so fields are signed 32 bit, which is a little
@@ -21,6 +22,7 @@ typedef struct RegisterDiff {
 typedef struct RegisterDiffGroup {
   int rep; // how many times to apply this test group
   int length;
+  bool skip;
   Registers expected; // an assertion to run at the end of a group
   uint16_t state[16]; // an array of pairs of (address, value) to compare
   RegisterDiff diff[256];
