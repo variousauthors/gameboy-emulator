@@ -293,7 +293,7 @@ RegisterDiffGroup
                    .sp = 0x0000,
                    .pc = 0x0001},
               }},
-         // decompressFirstNible/SecondNibble
+         // decompressFirstNible
          {.rep = 1,
           .length = 11,
           .expected =
@@ -460,6 +460,93 @@ RegisterDiffGroup
           }},
           // next it is going to decompress the other nibble
           // so just copy paste the last 3 groups
+
+         // decompressSecondNibble
+         {.rep = 1,
+          .length = 9,
+          .expected =
+              {
+                  .af = 0xC350,
+                  .bc = 0x03D7,
+                  .de = 0x0104,
+                  .hl = 0x8014,
+                  .sp = 0xFFFC,
+                  .pc = 0x00A1,
+              },
+          .state =
+              {
+                  0xFFFB,
+                  0x0004,
+                  0xFFFA,
+                  0x00EB,
+              },
+          .diff = {
+              {.af = 0x0000, // call $0095
+               .bc = 0x0000,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = -0x0002,
+               .pc = 0x006B},
+              {.af = 0x0000, // ld b, 8 / 2
+               .bc = 0x0400,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0002},
+              // .loop
+              {.af = 0x0000, // push bc
+               .bc = 0x0000,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = -0x0002,
+               .pc = 0x0001},
+              {.af = -0x00B0, // rl c
+               .bc = -0x0015,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0002},
+              {.af = -0x0F00, // rla
+               .bc = 0x0000,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0001},
+              {.af = 0x0000, // pop bc
+               .bc = 0x0015,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0002,
+               .pc = 0x0001},
+              {.af = 0x0000, // rl c
+               .bc = -0x0014,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0002},
+              {.af = -0x1E00, // rla
+               .bc = 0x0000,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0001},
+              {.af = 0x0030, // dec b
+               .bc = -0x0100,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0001},
+              {.af = 0x0000, // jr nz, .loop
+               .bc = 0x0000,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = -0x0009},
+          }},
+          // for testing loops
+          // I think we should test the first iteration 
+          // then skip the rest
+          // then test the last iteration
         };
 
 RegisterDiff TESTS_DIFF[TESTS_COUNT] = {{.af = 0x0000, // boot
