@@ -298,7 +298,7 @@ RegisterDiffGroup
           .length = 11,
           .expected =
               {
-                  .af = 0x3B40,
+                  .af = 0x3B50,
                   .bc = 0x039D,
                   .de = 0x0104,
                   .hl = 0x8010,
@@ -372,7 +372,7 @@ RegisterDiffGroup
                .hl = 0x0000,
                .sp = 0x0000,
                .pc = 0x0001},
-              {.af = 0x0030, // dec b
+              {.af = 0x0040, // dec b
                .bc = -0x0100,
                .de = 0x0000,
                .hl = 0x0000,
@@ -463,7 +463,7 @@ RegisterDiffGroup
 
          // decompressSecondNibble
          {.rep = 1,
-          .length = 9,
+          .length = 10,
           .expected =
               {
                   .af = 0xC350,
@@ -471,7 +471,7 @@ RegisterDiffGroup
                   .de = 0x0104,
                   .hl = 0x8014,
                   .sp = 0xFFFC,
-                  .pc = 0x00A1,
+                  .pc = 0x0098,
               },
           .state =
               {
@@ -530,7 +530,7 @@ RegisterDiffGroup
                .hl = 0x0000,
                .sp = 0x0000,
                .pc = 0x0001},
-              {.af = 0x0030, // dec b
+              {.af = 0x0040, // dec b
                .bc = -0x0100,
                .de = 0x0000,
                .hl = 0x0000,
@@ -547,6 +547,75 @@ RegisterDiffGroup
           // I think we should test the first iteration 
           // then skip the rest
           // then test the last iteration
+         {.rep = 3,
+          .length = 8,
+          .skip = true,
+          .expected =
+              {
+                  .af = 0xFCC0,
+                  .bc = 0x00BC,
+                  .de = 0x0104,
+                  .hl = 0x8014,
+                  .sp = 0xFFFC,
+                  .pc = 0x00A3,
+              },
+          .state =
+              {
+                  0x0000,
+                  0x0000,
+              },
+          .diff = {
+          }},
+         {.rep = 1,
+          .length = 5,
+          .expected =
+              {
+                  .af = 0xFCC0,
+                  .bc = 0x00BC,
+                  .de = 0x0104,
+                  .hl = 0x8018,
+                  .sp = 0xFFFE,
+                  .pc = 0x002E,
+              },
+          .state =
+              {
+                  0x8010,
+                  0x00F0,
+                  0x8012,
+                  0x00F0,
+              },
+          .diff = {
+            { .af = 0x0000, // ld [hli], a
+              .bc = 0x0000,
+              .de = 0x0000,
+              .hl = 0x0001,
+              .sp = 0x0000,
+              .pc = 0x0001},
+            { .af = 0x0000, // inc hl
+              .bc = 0x0000,
+              .de = 0x0000,
+              .hl = 0x0001,
+              .sp = 0x0000,
+              .pc = 0x0001},
+            { .af = 0x0000, // ld [hli], a
+              .bc = 0x0000,
+              .de = 0x0000,
+              .hl = 0x0001,
+              .sp = 0x0000,
+              .pc = 0x0001},
+            { .af = 0x0000, // inc hl
+              .bc = 0x0000,
+              .de = 0x0000,
+              .hl = 0x0001,
+              .sp = 0x0000,
+              .pc = 0x0001},
+            { .af = 0x0000, // ret
+              .bc = 0x0000,
+              .de = 0x0000,
+              .hl = 0x0000,
+              .sp = 0x0002,
+              .pc = -0x0079},
+          }},
         };
 
 RegisterDiff TESTS_DIFF[TESTS_COUNT] = {{.af = 0x0000, // boot

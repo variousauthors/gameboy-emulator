@@ -221,31 +221,29 @@ void INCF(int byte0) {
 // increment decrement
 void INC8(int byte0) {
   uint8_t *operand = r8[(byte0 & 0b00111000) >> 3];
+  uint8_t decrement = byte0 & 0b00000001;
 
-  if (byte0 & 0b00000001) {
+  if (decrement) {
     (*operand)--;
-    Regs.f |= 0b01000000;
+    SET_FLAG(N_FLAG);
   } else {
     (*operand)++;
-    Regs.f &= ~0b01000000;
+    CLEAR_FLAG(N_FLAG);
   }
 
   // if operand is zero set the z flag
   if (*operand) {
     // set z to 0
-    Regs.f &= ~0b10000000;
+    CLEAR_FLAG(Z_FLAG);
   } else {
     // set z to 1
-    Regs.f |= 0b10000000;
+    SET_FLAG(Z_FLAG);
   }
-
-  // sets n to 0
-  Regs.f &= ~0b0100000;
 
   // @TODO implement h flag
   // inc - set if overflow from bit 3
   // dec - set if borrow from bit 4
-  Regs.f &= ~0b0010000;
+  CLEAR_FLAG(H_FLAG);
 }
 
 #define Z_FLAG (0b10000000)
