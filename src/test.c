@@ -159,7 +159,7 @@ int runTests() {
 
       int failingState = -1;
 
-      if ((failingState = assertState(TEST_GROUPS[i].state)) > 0) {
+      if ((failingState = assertState(TEST_GROUPS[i].state)) >= 0) {
         uint8_t expected = getExpectedValue(TEST_GROUPS[i].state, failingState);
         uint16_t address =
             getExpectedAddress(TEST_GROUPS[i].state, failingState);

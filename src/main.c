@@ -276,6 +276,8 @@ uint8_t cond(uint8_t value) {
 }
 
 void JR08(int byte0) {
+  // note, this _does_ need to be signed
+  // since we might jump back
   int8_t dest = nextByte();
 
   if ((byte0 & 0b00100000) && !cond((byte0 & 0b00011000) >> 3)) {
@@ -350,11 +352,13 @@ void ARIM(int byte0) {
   }
   case _CP: {
     uint8_t result = Regs.a - operand;
+    uint8_t borrow4 = (Regs.a & 0x0F) < (operand & 0x0F);
+    uint8_t borrow8 = Regs.a < operand;
 
-    SET_FLAG(N_FLAG);
     result ? CLEAR_FLAG(Z_FLAG) : SET_FLAG(Z_FLAG);
-    // @TODO check 8-bit carry
-    // @TODO check 4-bit carry
+    SET_FLAG(N_FLAG);
+    borrow4 ? SET_FLAG(H_FLAG) : CLEAR_FLAG(H_FLAG);
+    borrow8 ? SET_FLAG(C_FLAG) : CLEAR_FLAG(C_FLAG);
 
     break;
   }

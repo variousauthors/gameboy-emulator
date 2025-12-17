@@ -616,93 +616,41 @@ RegisterDiffGroup
               .sp = 0x0002,
               .pc = -0x0079},
           }},
+
+          /* at this point we have implemented enough
+             instructions that I'm going to start skipping
+             through chunks of code until we hit something 
+             that breaks... this will reduce code health
+             a little but I feel like we are OK */
+          /* the thing to do is just pay attention to when
+             we see new instructions OR reliance on flags
+             since flags are the finicky thing that remains
+             unimplemented here and there */
+         {.rep = 1,
+          .length = 3952,
+          // ld a, [de]
+          // inc de
+          // ld a, e
+          // cp LOW(HeaderTitle)
+          // jr nz, decompressLogo
+          // 
+          .skip = true,
+          .expected =
+              {
+                  .af = 0x34C0,
+                  .bc = 0x0073,
+                  .de = 0x0134,
+                  .hl = 0x8190,
+                  .sp = 0xFFFE,
+                  .pc = 0x0034,
+              },
+          .state =
+              {
+                  0x818E,
+                  0x00FC,
+                  0x8010,
+                  0x00F0,
+              },
+          .diff = {
+          }},
         };
-
-RegisterDiff TESTS_DIFF[TESTS_COUNT] = {{.af = 0x0000, // boot
-                                         .bc = 0x0000,
-                                         .de = 0x0000,
-                                         .hl = 0x0000,
-                                         .sp = 0x0000,
-                                         .pc = 0x0000},
-                                        {.af = 0x0000, // ld sp, 0xFFFE
-                                         .bc = 0x0000,
-                                         .de = 0x0000,
-                                         .hl = 0x0000,
-                                         .sp = 0xFFFE,  // + 0xFFFE
-                                         .pc = 0x0003}, // + 3
-                                        {.af = 0x0080,  // xor a, a
-                                         .bc = 0x0000,
-                                         .de = 0x0000,
-                                         .hl = 0x0000,
-                                         .sp = 0x0000,
-                                         .pc = 0x0001},
-                                        {.af = 0x0000, // ld [hl], 0x9FFF
-                                         .bc = 0x0000,
-                                         .de = 0x0000,
-                                         .hl = 0x9FFF,
-                                         .sp = 0x0000,
-                                         .pc = 0x0003},
-                                        {.af = 0x0000, // ld[hl-], a
-                                         .bc = 0x0000,
-                                         .de = 0x0000,
-                                         .hl = -0x0001,
-                                         .sp = 0x0000,
-                                         .pc = 0x0001},
-                                        {.af = -0x0060, // bit 7, h (prefix)
-                                         .bc = 0x0000,
-                                         .de = 0x0000,
-                                         .hl = 0x0000,
-                                         .sp = 0x0000,
-                                         .pc = 0x0002},
-                                        {.af = 0x0000, // jr nz, n8
-                                         .bc = 0x0000,
-                                         .de = 0x0000,
-                                         .hl = 0x0000,
-                                         .sp = 0x0000,
-                                         .pc = -0x0003}};
-
-// af, bc, de, hl, sp, pc
-Registers TESTS[TESTS_COUNT] = {
-    {.af = 0x0000, // boot
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x0000,
-     .sp = 0x0000,
-     .pc = 0x0000},
-    {.af = 0x0000, // ld sp, 0xFFFE
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x0000,
-     .sp = 0xFFFE,
-     .pc = 0x0003},
-    {.af = 0x0080, // xor a, a
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x0000,
-     .sp = 0xFFFE,
-     .pc = 0x0004},
-    {.af = 0x0080, // ld [hl], 0x9FFF
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x9FFF,
-     .sp = 0xFFFE,
-     .pc = 0x0007},
-    {.af = 0x0080, // ld[hl-], a
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x9FFE,
-     .sp = 0xFFFE,
-     .pc = 0x0008},
-    {.af = 0x0020, // bit 7, h (prefix)
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x9FFE,
-     .sp = 0xFFFE,
-     .pc = 0x000A},
-    {.af = 0x0020, // jr nz, n8
-     .bc = 0x0000,
-     .de = 0x0000,
-     .hl = 0x9FFE,
-     .sp = 0xFFFE,
-     .pc = 0x0007},
-};
