@@ -40,7 +40,7 @@ void print(enum LOG_CODES code) {
 uint8_t (*nextByte)(void);
 uint16_t (*nextWord)(void);
 uint8_t (*getByte)(uint16_t address);
-uint8_t (*getWord)(uint16_t address);
+uint16_t (*getWord)(uint16_t address);
 
 int assertEqual(Registers a, Registers b) {
   return a.af == b.af && a.bc == b.bc && a.de == b.de && a.hl == b.hl &&

@@ -316,79 +316,80 @@ RegisterDiffGroup
                   0xFFFA,
                   0x00CE,
               },
-          .diff = {
-              {.af = 0x0000, // call $0095
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = -0x0002,
-               .pc = 0x006D},
-              {.af = 0x0000, // ld c, a
-               .bc = 0x00BC,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0001},
-              {.af = 0x0000, // ld b, 8 / 2
-               .bc = 0x0400,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0002},
-              // .loop
-              {.af = 0x0000, // push bc
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = -0x0002,
-               .pc = 0x0001},
-              {.af = 0x0010, // rl c
-               .bc = -0x0032,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0002},
-              {.af = -0x3100, // rla
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0001},
-              {.af = 0x0000, // pop bc
-               .bc = 0x0032,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0002,
-               .pc = 0x0001},
-              {.af = 0x0000, // rl c
-               .bc = -0x0031,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0002},
-              {.af = -0x6200, // rla
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0001},
-              {.af = 0x0040, // dec b
-               .bc = -0x0100,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0001},
-              {.af = 0x0000, // jr nz, .loop
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = -0x0009},
-          }},
-          // for testing loops
-          // I think we should test the first iteration 
-          // then skip the rest
-          // then test the last iteration
+          .diff =
+              {
+                  {.af = 0x0000, // call $0095
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = -0x0002,
+                   .pc = 0x006D},
+                  {.af = 0x0000, // ld c, a
+                   .bc = 0x00BC,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // ld b, 8 / 2
+                   .bc = 0x0400,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0002},
+                  // .loop
+                  {.af = 0x0000, // push bc
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = -0x0002,
+                   .pc = 0x0001},
+                  {.af = 0x0010, // rl c
+                   .bc = -0x0032,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0002},
+                  {.af = -0x3100, // rla
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // pop bc
+                   .bc = 0x0032,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0002,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // rl c
+                   .bc = -0x0031,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0002},
+                  {.af = -0x6200, // rla
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0040, // dec b
+                   .bc = -0x0100,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // jr nz, .loop
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = -0x0009},
+              }},
+         // for testing loops
+         // I think we should test the first iteration
+         // then skip the rest
+         // then test the last iteration
          {.rep = 3,
           .length = 8,
           .skip = true,
@@ -406,8 +407,7 @@ RegisterDiffGroup
                   0x0000,
                   0x0000,
               },
-          .diff = {
-          }},
+          .diff = {}},
          {.rep = 1,
           .length = 5,
           .expected =
@@ -426,40 +426,41 @@ RegisterDiffGroup
                   0x8012,
                   0x00F0,
               },
-          .diff = {
-            { .af = 0x0000, // ld [hli], a
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0001,
-              .sp = 0x0000,
-              .pc = 0x0001},
-            { .af = 0x0000, // inc hl
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0001,
-              .sp = 0x0000,
-              .pc = 0x0001},
-            { .af = 0x0000, // ld [hli], a
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0001,
-              .sp = 0x0000,
-              .pc = 0x0001},
-            { .af = 0x0000, // inc hl
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0001,
-              .sp = 0x0000,
-              .pc = 0x0001},
-            { .af = 0x0000, // ret
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0000,
-              .sp = 0x0002,
-              .pc = -0x007C},
-          }},
-          // next it is going to decompress the other nibble
-          // so just copy paste the last 3 groups
+          .diff =
+              {
+                  {.af = 0x0000, // ld [hli], a
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0001,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // inc hl
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0001,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // ld [hli], a
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0001,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // inc hl
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0001,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // ret
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0002,
+                   .pc = -0x007C},
+              }},
+         // next it is going to decompress the other nibble
+         // so just copy paste the last 3 groups
 
          // decompressSecondNibble
          {.rep = 1,
@@ -480,73 +481,74 @@ RegisterDiffGroup
                   0xFFFA,
                   0x00EB,
               },
-          .diff = {
-              {.af = 0x0000, // call $0095
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = -0x0002,
-               .pc = 0x006B},
-              {.af = 0x0000, // ld b, 8 / 2
-               .bc = 0x0400,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0002},
-              // .loop
-              {.af = 0x0000, // push bc
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = -0x0002,
-               .pc = 0x0001},
-              {.af = -0x00B0, // rl c
-               .bc = -0x0015,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0002},
-              {.af = -0x0F00, // rla
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0001},
-              {.af = 0x0000, // pop bc
-               .bc = 0x0015,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0002,
-               .pc = 0x0001},
-              {.af = 0x0000, // rl c
-               .bc = -0x0014,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0002},
-              {.af = -0x1E00, // rla
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0001},
-              {.af = 0x0040, // dec b
-               .bc = -0x0100,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = 0x0001},
-              {.af = 0x0000, // jr nz, .loop
-               .bc = 0x0000,
-               .de = 0x0000,
-               .hl = 0x0000,
-               .sp = 0x0000,
-               .pc = -0x0009},
-          }},
-          // for testing loops
-          // I think we should test the first iteration 
-          // then skip the rest
-          // then test the last iteration
+          .diff =
+              {
+                  {.af = 0x0000, // call $0095
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = -0x0002,
+                   .pc = 0x006B},
+                  {.af = 0x0000, // ld b, 8 / 2
+                   .bc = 0x0400,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0002},
+                  // .loop
+                  {.af = 0x0000, // push bc
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = -0x0002,
+                   .pc = 0x0001},
+                  {.af = -0x00B0, // rl c
+                   .bc = -0x0015,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0002},
+                  {.af = -0x0F00, // rla
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // pop bc
+                   .bc = 0x0015,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0002,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // rl c
+                   .bc = -0x0014,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0002},
+                  {.af = -0x1E00, // rla
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0040, // dec b
+                   .bc = -0x0100,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // jr nz, .loop
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0000,
+                   .pc = -0x0009},
+              }},
+         // for testing loops
+         // I think we should test the first iteration
+         // then skip the rest
+         // then test the last iteration
          {.rep = 3,
           .length = 8,
           .skip = true,
@@ -564,8 +566,7 @@ RegisterDiffGroup
                   0x0000,
                   0x0000,
               },
-          .diff = {
-          }},
+          .diff = {}},
          {.rep = 1,
           .length = 5,
           .expected =
@@ -583,49 +584,52 @@ RegisterDiffGroup
                   0x00F0,
                   0x8012,
                   0x00F0,
+                  0x00D8,
+                  0x003C,
               },
-          .diff = {
-            { .af = 0x0000, // ld [hli], a
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0001,
-              .sp = 0x0000,
-              .pc = 0x0001},
-            { .af = 0x0000, // inc hl
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0001,
-              .sp = 0x0000,
-              .pc = 0x0001},
-            { .af = 0x0000, // ld [hli], a
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0001,
-              .sp = 0x0000,
-              .pc = 0x0001},
-            { .af = 0x0000, // inc hl
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0001,
-              .sp = 0x0000,
-              .pc = 0x0001},
-            { .af = 0x0000, // ret
-              .bc = 0x0000,
-              .de = 0x0000,
-              .hl = 0x0000,
-              .sp = 0x0002,
-              .pc = -0x0079},
-          }},
+          .diff =
+              {
+                  {.af = 0x0000, // ld [hli], a
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0001,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // inc hl
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0001,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // ld [hli], a
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0001,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // inc hl
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0001,
+                   .sp = 0x0000,
+                   .pc = 0x0001},
+                  {.af = 0x0000, // ret
+                   .bc = 0x0000,
+                   .de = 0x0000,
+                   .hl = 0x0000,
+                   .sp = 0x0002,
+                   .pc = -0x0079},
+              }},
 
-          /* at this point we have implemented enough
-             instructions that I'm going to start skipping
-             through chunks of code until we hit something 
-             that breaks... this will reduce code health
-             a little but I feel like we are OK */
-          /* the thing to do is just pay attention to when
-             we see new instructions OR reliance on flags
-             since flags are the finicky thing that remains
-             unimplemented here and there */
+         /* at this point we have implemented enough
+            instructions that I'm going to start skipping
+            through chunks of code until we hit something
+            that breaks... this will reduce code health
+            a little but I feel like we are OK */
+         /* the thing to do is just pay attention to when
+            we see new instructions OR reliance on flags
+            since flags are the finicky thing that remains
+            unimplemented here and there */
          {.rep = 1,
           .length = 3952,
           // ld a, [de]
@@ -633,7 +637,7 @@ RegisterDiffGroup
           // ld a, e
           // cp LOW(HeaderTitle)
           // jr nz, decompressLogo
-          // 
+          //
           .skip = true,
           .expected =
               {
@@ -651,6 +655,40 @@ RegisterDiffGroup
                   0x8010,
                   0x00F0,
               },
+          .diff = {}},
+         {.rep = 1,
+          .length = 3,
+          .expected =
+              {
+                  .af = 0x34C0,
+                  .bc = 0x0873,
+                  .de = 0x00D8,
+                  .hl = 0x8190,
+                  .sp = 0xFFFE,
+                  .pc = 0x0039,
+              },
+          .state =
+              {
+                  0x0000,
+                  0x0000,
+              },
           .diff = {
-          }},
-        };
+              {.af = 0x0000, // ld de, RTile (0x00D8)
+               .bc = 0x0000,
+               .de = -0x005C,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0003},
+              {.af = 0x0000, // ld b, 8
+               .bc = 0x0800,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0002},
+              {.af = 0x0000, // ld a, [de]
+               .bc = 0x0800,
+               .de = 0x0000,
+               .hl = 0x0000,
+               .sp = 0x0000,
+               .pc = 0x0002},
+          }}};

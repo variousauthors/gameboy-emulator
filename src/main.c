@@ -19,7 +19,7 @@ uint32_t framebuffer[WIDTH * HEIGHT];
 uint8_t (*nextByte)(void);
 uint16_t (*nextWord)(void);
 uint8_t (*getByte)(uint16_t address);
-uint8_t (*getWord)(uint16_t address);
+uint16_t (*getWord)(uint16_t address);
 
 uint8_t nextByteBOOT() { return BootROM[Regs.pc++]; }
 uint16_t nextWordBOOT() { return nextByteBOOT() | (nextByteBOOT() << 8); }
@@ -35,6 +35,22 @@ uint16_t getWordROM(uint16_t address) {
 uint8_t getByteBOOT(uint16_t address) { return BootROM[address]; }
 uint16_t getWordBOOT(uint16_t address) {
   return BootROM[address] | (BootROM[address + 1] << 8);
+}
+
+uint8_t (*get_nextByte(void))(void) {
+  return cpu.boot ? nextByteROM : nextByteBOOT;
+}
+
+uint16_t (*get_nextWord(void))(void) {
+  return cpu.boot ? nextWordROM : nextWordBOOT;
+}
+
+uint8_t (*get_Byte())(uint16_t address) {
+  return cpu.boot ? getByteROM : getByteBOOT;
+}
+
+uint16_t (*get_Word())(uint16_t address) {
+  return cpu.boot ? getWordROM : getWordBOOT;
 }
 
 // a simple animation counter
@@ -130,7 +146,7 @@ void LD08(int byte0) {
           Regs.a = Memory[Regs.bc];
           break;
         case 1:
-          Regs.a = Memory[Regs.de];
+          Regs.a = getByte(Regs.de);
           break;
         case 2:
           Regs.a = Memory[Regs.hl++];
@@ -902,27 +918,13 @@ __attribute__((export_name("boot"))) void boot(void) {
 #define DOTS_PER_FRAME 70244
 #define CYCLES_PER_FRAME (DOTS_PER_FRAME >> 2)
 
-uint8_t (*get_nextByte(void))(void) {
-  return cpu.boot ? nextByteROM : nextByteBOOT;
-}
-
-uint16_t (*get_nextWord(void))(void) {
-  return cpu.boot ? nextWordROM : nextWordBOOT;
-}
-
-uint8_t (*get_Byte())(uint16_t address) {
-  return cpu.boot ? getByteROM : getByteBOOT;
-}
-
-uint16_t (*get_Word())(uint16_t address) {
-  return cpu.boot ? getWordROM : getWordBOOT;
-}
-
 __attribute__((export_name("next_instruction"))) void next_instruction(void) {
   if (cpu.halt) {
     return;
   }
 
+  getByte = get_Byte();
+  getWord = get_Word();
   nextByte = get_nextByte();
   nextWord = get_nextWord();
 
